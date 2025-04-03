@@ -23,3 +23,12 @@ func NewServer(config config.Config, store db.Querier, log log.Logger) *Server {
 	}
 	return server
 }
+
+func (s *Server) MountHandlers() {
+	api := s.router.Group("/api")
+	api.POST("/users")
+}
+
+func (s *Server) Start(addr string) error {
+	return s.router.Run(addr)
+}
