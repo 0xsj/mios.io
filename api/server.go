@@ -1,41 +1,25 @@
 package api
 
 import (
-	"io"
-	"net/http"
-
-	"github.com/gorilla/mux"
+	"github.com/0xsj/gin-sqlc/config"
+	db "github.com/0xsj/gin-sqlc/db/sqlc"
+	"github.com/0xsj/gin-sqlc/log"
+	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
-	mux.Router
+	config config.Config
+	router *gin.Engine
+	store db.Querier
+	log log.Logger
 }
 
-func NewServer() *Server {
-	s := &Server{}
-	s.Router = *mux.NewRouter()
-	return s
-}
-
-func (s *Server) Run(address string) error {
-	return http.ListenAndServe(address, s)
-}
-
-func main(){
-	s := NewServer()
-	s.HandleFunc("/health", s.HealthCheckHandler).Methods("GET")
-	api := s.PathPrefix("/api").Subrouter()
-	users := api.PathPrefix("/users").Subrouter()
-	users.HandleFunc("/create", s.CreateUser).Methods("POST")
-	s.Run(":8080")
-}
-
-func (s * Server) HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	io.WriteString(w, `${"alive": true}`)
-}
-
-func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
-
+func NewServer(config config.Config, store db.Querier, log log.Logger) *Server {
+	server := &Server{
+		config: config,
+		router: gin.Default(),
+		store:  store,
+		log:    log,
+	}
+	return server
 }
