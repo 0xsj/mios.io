@@ -2,7 +2,10 @@ module github.com/0xsj/gin-sqlc
 
 go 1.24.1
 
-require github.com/gorilla/mux v1.8.1
+require (
+	github.com/gorilla/mux v1.8.1
+	github.com/lib/pq v1.10.2
+)
 
 require (
 	github.com/bytedance/sonic v1.11.6 // indirect
