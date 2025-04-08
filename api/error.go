@@ -23,9 +23,7 @@ func constraintErr(err error) *Error {
 	if errors.As(err, &pqErr) {
 		switch pqErr.Constraint {
 		case "users_username_key":
-			// return NewError(ErrUsernameAlreadyTaken)
 		case "users_email_key":
-			// return NewError(ErrEmailAlreadyTaken)
 		}
 	}
 	return nil
