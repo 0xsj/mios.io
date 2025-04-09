@@ -32,3 +32,8 @@ func (s *Server) MountHandlers() {
 func (s *Server) Start(addr string) error {
 	return s.router.Run(addr)
 }
+
+func (s *Server) Router() *gin.Engine {
+	return s.router
+}
+
