@@ -13,21 +13,21 @@ import (
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
-  username,
-  email,
-  first_name,
-  last_name
+    username, email, first_name, last_name, 
+    profile_image_url, bio, theme
 ) VALUES (
-  $1, $2, $3, $4
-)
-RETURNING user_id, username, email, first_name, last_name, profile_image_url, bio, theme, custom_domain, is_premium, created_at, updated_at
+    $1, $2, $3, $4, $5, $6, $7
+) RETURNING user_id, username, email, first_name, last_name, profile_image_url, bio, theme, custom_domain, is_premium, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	Username  string  `json:"username"`
-	Email     string  `json:"email"`
-	FirstName *string `json:"first_name"`
-	LastName  *string `json:"last_name"`
+	Username        string  `json:"username"`
+	Email           string  `json:"email"`
+	FirstName       *string `json:"first_name"`
+	LastName        *string `json:"last_name"`
+	ProfileImageUrl *string `json:"profile_image_url"`
+	Bio             *string `json:"bio"`
+	Theme           *string `json:"theme"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*User, error) {
@@ -36,6 +36,9 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*User, 
 		arg.Email,
 		arg.FirstName,
 		arg.LastName,
+		arg.ProfileImageUrl,
+		arg.Bio,
+		arg.Theme,
 	)
 	var i User
 	err := row.Scan(
@@ -65,13 +68,13 @@ func (q *Queries) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 	return err
 }
 
-const getUserByEmail = `-- name: GetUserByEmail :one
+const getUser = `-- name: GetUser :one
 SELECT user_id, username, email, first_name, last_name, profile_image_url, bio, theme, custom_domain, is_premium, created_at, updated_at FROM users
-WHERE email = $1 LIMIT 1
+WHERE user_id = $1 LIMIT 1
 `
 
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, error) {
-	row := q.db.QueryRow(ctx, getUserByEmail, email)
+func (q *Queries) GetUser(ctx context.Context, userID uuid.UUID) (*User, error) {
+	row := q.db.QueryRow(ctx, getUser, userID)
 	var i User
 	err := row.Scan(
 		&i.UserID,
@@ -90,13 +93,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, erro
 	return &i, err
 }
 
-const getUserByID = `-- name: GetUserByID :one
+const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT user_id, username, email, first_name, last_name, profile_image_url, bio, theme, custom_domain, is_premium, created_at, updated_at FROM users
-WHERE user_id = $1 LIMIT 1
+WHERE email = $1 LIMIT 1
 `
 
-func (q *Queries) GetUserByID(ctx context.Context, userID uuid.UUID) (*User, error) {
-	row := q.db.QueryRow(ctx, getUserByID, userID)
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
 	var i User
 	err := row.Scan(
 		&i.UserID,
@@ -140,99 +143,89 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (*User
 	return &i, err
 }
 
-const listUsers = `-- name: ListUsers :many
-SELECT user_id, username, email, first_name, last_name, profile_image_url, bio, theme, custom_domain, is_premium, created_at, updated_at FROM users
-ORDER BY created_at
-LIMIT $1
-OFFSET $2
-`
-
-type ListUsersParams struct {
-	Limit  int64 `json:"limit"`
-	Offset int64 `json:"offset"`
-}
-
-func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]*User, error) {
-	rows, err := q.db.Query(ctx, listUsers, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []*User
-	for rows.Next() {
-		var i User
-		if err := rows.Scan(
-			&i.UserID,
-			&i.Username,
-			&i.Email,
-			&i.FirstName,
-			&i.LastName,
-			&i.ProfileImageUrl,
-			&i.Bio,
-			&i.Theme,
-			&i.CustomDomain,
-			&i.IsPremium,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const updateUser = `-- name: UpdateUser :one
+const updateUser = `-- name: UpdateUser :exec
 UPDATE users
 SET 
-  username = COALESCE($2, username),
-  email = COALESCE($3, email),
-  first_name = COALESCE($4, first_name),
-  last_name = COALESCE($5, last_name),
-  profile_image_url = COALESCE($6, profile_image_url),
-  bio = COALESCE($7, bio),
-  updated_at = CURRENT_TIMESTAMP
+    first_name = COALESCE($2, first_name),
+    last_name = COALESCE($3, last_name),
+    profile_image_url = COALESCE($4, profile_image_url),
+    bio = COALESCE($5, bio),
+    theme = COALESCE($6, theme),
+    updated_at = CURRENT_TIMESTAMP
 WHERE user_id = $1
-RETURNING user_id, username, email, first_name, last_name, profile_image_url, bio, theme, custom_domain, is_premium, created_at, updated_at
 `
 
 type UpdateUserParams struct {
 	UserID          uuid.UUID `json:"user_id"`
-	Username        string    `json:"username"`
-	Email           string    `json:"email"`
 	FirstName       *string   `json:"first_name"`
 	LastName        *string   `json:"last_name"`
 	ProfileImageUrl *string   `json:"profile_image_url"`
 	Bio             *string   `json:"bio"`
+	Theme           *string   `json:"theme"`
 }
 
-func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (*User, error) {
-	row := q.db.QueryRow(ctx, updateUser,
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
+	_, err := q.db.Exec(ctx, updateUser,
 		arg.UserID,
-		arg.Username,
-		arg.Email,
 		arg.FirstName,
 		arg.LastName,
 		arg.ProfileImageUrl,
 		arg.Bio,
+		arg.Theme,
 	)
-	var i User
-	err := row.Scan(
-		&i.UserID,
-		&i.Username,
-		&i.Email,
-		&i.FirstName,
-		&i.LastName,
-		&i.ProfileImageUrl,
-		&i.Bio,
-		&i.Theme,
-		&i.CustomDomain,
-		&i.IsPremium,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return &i, err
+	return err
+}
+
+const updateUserEmail = `-- name: UpdateUserEmail :exec
+UPDATE users
+SET
+    email = $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = $1
+`
+
+type UpdateUserEmailParams struct {
+	UserID uuid.UUID `json:"user_id"`
+	Email  string    `json:"email"`
+}
+
+func (q *Queries) UpdateUserEmail(ctx context.Context, arg UpdateUserEmailParams) error {
+	_, err := q.db.Exec(ctx, updateUserEmail, arg.UserID, arg.Email)
+	return err
+}
+
+const updateUserPremiumStatus = `-- name: UpdateUserPremiumStatus :exec
+UPDATE users
+SET
+    is_premium = $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = $1
+`
+
+type UpdateUserPremiumStatusParams struct {
+	UserID    uuid.UUID `json:"user_id"`
+	IsPremium *bool     `json:"is_premium"`
+}
+
+func (q *Queries) UpdateUserPremiumStatus(ctx context.Context, arg UpdateUserPremiumStatusParams) error {
+	_, err := q.db.Exec(ctx, updateUserPremiumStatus, arg.UserID, arg.IsPremium)
+	return err
+}
+
+const updateUserUsername = `-- name: UpdateUserUsername :exec
+UPDATE users
+SET
+    username = $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = $1
+`
+
+type UpdateUserUsernameParams struct {
+	UserID   uuid.UUID `json:"user_id"`
+	Username string    `json:"username"`
+}
+
+func (q *Queries) UpdateUserUsername(ctx context.Context, arg UpdateUserUsernameParams) error {
+	_, err := q.db.Exec(ctx, updateUserUsername, arg.UserID, arg.Username)
+	return err
 }
