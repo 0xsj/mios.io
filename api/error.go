@@ -1,45 +1,52 @@
 package api
 
 import (
-	"database/sql"
 	"errors"
-
-	"github.com/lib/pq"
+	"net/http"
 )
 
-type Error struct {
-	Errors map[string]interface{} `json:"errors"`
+var (
+	ErrInvalidInput     = errors.New("invalid input")
+	ErrUnauthorized     = errors.New("unauthorized")
+	ErrForbidden        = errors.New("forbidden")
+	ErrNotFound         = errors.New("resource not found")
+	ErrInternalServer   = errors.New("internal server error")
+	ErrDuplicateEntry   = errors.New("duplicate entry")
+	ErrValidationFailed = errors.New("validation failed")
+)
+
+// ErrorResponse represents the structure of error responses
+type ErrorResponse struct {
+	Status  int    `json:"-"`          // HTTP status code, not shown in response
+	Code    string `json:"code"`       // Application-specific error code
+	Message string `json:"message"`    // User-friendly error message
+	Details any    `json:"details,omitempty"` // Optional details about the error
 }
 
-func NewError(err error) *Error {
-	e := Error{}
-	e.Errors = make(map[string]interface{})
-	e.Errors["body"] = err.Error()
-	return &e
-}
-
-func constraintErr(err error) *Error {
-	var pqErr *pq.Error
-	if errors.As(err, &pqErr) {
-		switch pqErr.Constraint {
-		case "users_username_key":
-		case "users_email_key":
-		}
+// Common error responses
+var (
+	ErrBadRequestResponse = ErrorResponse{
+		Status:  http.StatusBadRequest,
+		Code:    "BAD_REQUEST",
+		Message: "The request was invalid",
 	}
-	return nil
-}
-
-
-
-
-func Nullable[T any](row *T, err error) (*T, error) {
-	if err == nil {
-		return row, nil
+	
+	ErrUnauthorizedResponse = ErrorResponse{
+		Status:  http.StatusUnauthorized,
+		Code:    "UNAUTHORIZED",
+		Message: "Authentication is required",
 	}
-
-	if err == sql.ErrNoRows {
-		return nil, nil
+	
+	ErrNotFoundResponse = ErrorResponse{
+		Status:  http.StatusNotFound,
+		Code:    "NOT_FOUND",
+		Message: "The requested resource was not found",
 	}
+	
+	ErrServerResponse = ErrorResponse{
+		Status:  http.StatusInternalServerError,
+		Code:    "INTERNAL_SERVER_ERROR",
+		Message: "An unexpected error occurred",
+	}
+)
 
-	return nil, err
-}
