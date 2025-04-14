@@ -3,6 +3,8 @@ package api
 import (
 	"errors"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 var (
@@ -50,3 +52,39 @@ var (
 	}
 )
 
+func RespondWithError(c *gin.Context, err ErrorResponse, details ...any) {
+	if len(details) > 0 {
+		err.Details = details[0]
+	}
+	c.JSON(err.Status, err)
+}
+
+func HandleError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, ErrInvalidInput), errors.Is(err, ErrValidationFailed):
+		RespondWithError(c, ErrBadRequestResponse, err.Error())
+	
+	case errors.Is(err, ErrUnauthorized):
+		RespondWithError(c, ErrUnauthorizedResponse)
+	
+	case errors.Is(err, ErrForbidden):
+		RespondWithError(c, ErrorResponse{
+			Status:  http.StatusForbidden,
+			Code:    "FORBIDDEN",
+			Message: "You don't have permission to access this resource",
+		})
+	
+	case errors.Is(err, ErrNotFound):
+		RespondWithError(c, ErrNotFoundResponse)
+	
+	case errors.Is(err, ErrDuplicateEntry):
+		RespondWithError(c, ErrorResponse{
+			Status:  http.StatusConflict,
+			Code:    "CONFLICT",
+			Message: "The resource already exists",
+		})
+	
+	default:
+		RespondWithError(c, ErrServerResponse)
+	}
+}
