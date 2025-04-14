@@ -4,7 +4,7 @@ BINARY_NAME=gin-sqlc-app
 VERSION=0.1.0
 BUILD_DIR=./bin
 ENV_FILE=./dev.env
-DB_DSN=postgres://postgres:postgres@localhost:5432/devdb?sslmode=disable
+DB_DSN=postgres://devuser:devpass@localhost:5432/devdb?sslmode=disable
 MIGRATION_PATH=./db/migration
 
 # Default target
