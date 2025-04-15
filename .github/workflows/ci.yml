@@ -1,0 +1,89 @@
+name: Go CI/CD
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: devuser
+          POSTGRES_PASSWORD: devpass
+          POSTGRES_DB: devdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24'
+
+    - name: Install dependencies
+      run: make install-tools
+
+    - name: Run migrations
+      run: make migrate-up
+
+    - name: Run tests
+      run: make test-coverage
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24'
+
+    - name: Install dependencies
+      run: make install-tools
+
+    - name: Format check
+      run: |
+        make format
+        if [[ -n $(git status --porcelain) ]]; then
+          echo "Code is not formatted. Run 'make format' locally."
+          exit 1
+        fi
+
+    - name: Run linter
+      run: make lint
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24'
+
+    - name: Build
+      run: make build
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: gin-sqlc-app
+        path: bin/gin-sqlc-app
