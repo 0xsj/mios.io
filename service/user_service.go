@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -11,7 +12,7 @@ import (
 )
 
 type UserService interface {
-	CreateUser(ctx context.Context, input CreateUserInput)(*UserDTO, error)
+	CreateUser(ctx context.Context, input CreateUserInput) (*UserDTO, error)
 }
 
 type CreateUserInput struct {
@@ -22,14 +23,13 @@ type CreateUserInput struct {
 }
 
 type UserDTO struct {
-	ID              string `json:"id"`
-	Username        string `json:"username"`
-	Email           string `json:"email"`
-	FirstName       string `json:"first_name,omitempty"`
-	LastName        string `json:"last_name,omitempty"`
-	IsPremium       bool   `json:"is_premium"`
+	ID        string `json:"id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	FirstName string `json:"first_name,omitempty"`
+	LastName  string `json:"last_name,omitempty"`
+	IsPremium bool   `json:"is_premium"`
 }
-
 
 type userService struct {
 	userRepo repository.UserRepository
@@ -42,6 +42,8 @@ func NewUserService(userRepo repository.UserRepository) UserService {
 }
 
 func (s *userService) CreateUser(ctx context.Context, input CreateUserInput) (*UserDTO, error) {
+	fmt.Println("UserService.CreateUser called")
+
 	if !isValidUsername(input.Username) {
 		return nil, api.ErrInvalidInput
 	}
@@ -51,14 +53,17 @@ func (s *userService) CreateUser(ctx context.Context, input CreateUserInput) (*U
 	}
 
 	params := repository.CreateUserParams{
-		Username:        input.Username,
-		Email:           input.Email,
-		FirstName:       input.FirstName,
-		LastName:        input.LastName,
+		Username:  input.Username,
+		Email:     input.Email,
+		FirstName: input.FirstName,
+		LastName:  input.LastName,
 	}
+
+	fmt.Printf("Calling repository with params: %+v\n", params)
 
 	user, err := s.userRepo.CreateUser(ctx, params)
 	if err != nil {
+		fmt.Printf("Repository error: %v\n", err)
 		if err == repository.ErrDuplicateKey {
 			return nil, api.ErrDuplicateEntry
 		}
@@ -87,12 +92,11 @@ func mapUserToDTO(user *db.User) *UserDTO {
 	return dto
 }
 
-
 func isValidUsername(username string) bool {
 	if len(username) < 3 || len(username) > 30 {
 		return false
 	}
-	
+
 	pattern := `^[a-zA-Z0-9_]+$`
 	match, _ := regexp.MatchString(pattern, username)
 	return match

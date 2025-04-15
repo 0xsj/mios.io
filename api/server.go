@@ -10,8 +10,8 @@ import (
 type Server struct {
 	config config.Config
 	router *gin.Engine
-	store db.Querier
-	log log.Logger
+	store  db.Querier
+	log    log.Logger
 }
 
 func NewServer(config config.Config, store db.Querier, log log.Logger) *Server {
@@ -36,4 +36,3 @@ func (s *Server) Start(addr string) error {
 func (s *Server) Router() *gin.Engine {
 	return s.router
 }
-

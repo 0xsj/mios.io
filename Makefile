@@ -140,3 +140,12 @@ install-tools:
 help:
 	@echo "Available targets:"
 	@grep -E '^## [a-zA-Z_-]+:' $(MAKEFILE_LIST) | sed 's/## //' | sort
+
+## help: format code
+format:
+	@echo "Formatting code..."
+	@if command -v gofumpt > /dev/null; then \
+		gofumpt -l -w .; \
+	else \
+		go fmt ./...; \
+	fi

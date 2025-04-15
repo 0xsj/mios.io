@@ -115,7 +115,7 @@ func TestHandleError(t *testing.T) {
 			HandleError(c, tt.err)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
-			
+
 			assert.Contains(t, w.Body.String(), tt.expectedCode)
 		})
 	}
