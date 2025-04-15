@@ -21,17 +21,22 @@ type PaginationMeta struct {
 	TotalRecords	int	`json:"total_records"`
 }
 
-func RespondWithSuccess(c *gin.Context, data any, message ...string) {
-	resp := Response{
-		Success: true,
-		Data:	data,
-	}
-
-	if len(message) > 0 {
-		resp.Message = message[0]
-	}
-
-	c.JSON(http.StatusOK, resp)
+func RespondWithSuccess(c *gin.Context, data any, message string, statusCode ...int) {
+    resp := Response{
+        Success: true,
+        Data:    data,
+    }
+    
+    if message != "" {
+        resp.Message = message
+    }
+    
+    code := http.StatusOK
+    if len(statusCode) > 0 {
+        code = statusCode[0]
+    }
+    
+    c.JSON(code, resp)
 }
 
 func RespondWithPagination(c *gin.Context, data any, meta PaginationMeta) {
