@@ -1,33 +1,58 @@
-# See http://help.github.com/ignore-files/ for more about ignoring files.
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+dist/
 
-# dependencies
-/node_modules
-/dist
+# Test binary, built with `go test -c`
+*.test
 
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+coverage.html
 
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-.history/*
+# Dependency directories (remove the comment below to include it)
+# vendor/
 
+# Go workspace file
+go.work
 
-#System Files
+# Environment variables
+.env
+*.env
+!example.env
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS specific files
 .DS_Store
-Thumbs.db
 
+# Log files
+*.log
 
-#log files
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Database files
+*.db
+*.sqlite
+
+# Air tmp directory
+tmp/
+
+# Generated mock files
+mocks/
+
+# Local configuration
+config.local.yaml
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
