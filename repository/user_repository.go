@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
@@ -58,31 +57,44 @@ func NewUserRepository(db *db.Queries) UserRepository {
 }
 
 func (r *SQLCUserRepository) CreateUser(ctx context.Context, arg CreateUserParams) (*db.User, error) {
-	firstNamePtr := sql.NullString{String: arg.FirstName, Valid: arg.FirstName != ""}
-	lastNamePtr := sql.NullString{String: arg.LastName, Valid: arg.LastName != ""}
-	profileImagePtr := sql.NullString{String: arg.ProfileImageURL, Valid: arg.ProfileImageURL != ""}
-	bioPtr := sql.NullString{String: arg.Bio, Valid: arg.Bio != ""}
-	themePtr := sql.NullString{String: arg.Theme, Valid: arg.Theme != ""}
-	
-	params := db.CreateUserParams{
-		Username:        arg.Username,
-		Email:           arg.Email,
-		FirstName:       &firstNamePtr.String,
-		LastName:        &lastNamePtr.String,
-		ProfileImageUrl: &profileImagePtr.String,
-		Bio:             &bioPtr.String,
-		Theme:           &themePtr.String,
-	}
+    var firstNamePtr, lastNamePtr, profileImagePtr, bioPtr, themePtr *string
+    
+    if arg.FirstName != "" {
+        firstNamePtr = &arg.FirstName
+    }
+    if arg.LastName != "" {
+        lastNamePtr = &arg.LastName
+    }
+    if arg.ProfileImageURL != "" {
+        profileImagePtr = &arg.ProfileImageURL
+    }
+    if arg.Bio != "" {
+        bioPtr = &arg.Bio
+    }
+    if arg.Theme != "" {
+        themePtr = &arg.Theme
+    }
+    
+    params := db.CreateUserParams{
+        Username:        arg.Username,
+        Email:           arg.Email,
+        FirstName:       firstNamePtr,
+        LastName:        lastNamePtr,
+        ProfileImageUrl: profileImagePtr,
+        Bio:             bioPtr,
+        Theme:           themePtr,
+    }
 
-	user, err := r.db.CreateUser(ctx, params)
-	if err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			if pgErr.Code == "23505" {
-				return nil, ErrDuplicateKey
-			}
-		}
-		return nil, ErrDatabase
-	}
-	return user, nil
+    user, err := r.db.CreateUser(ctx, params)
+    if err != nil {
+        pgErr, ok := err.(*pgconn.PgError)
+        if ok {
+            if pgErr.Code == "23505" {
+                return nil, ErrDuplicateKey
+            }
+        }
+        return nil, ErrDatabase
+    }
+    
+    return user, nil
 }
