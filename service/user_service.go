@@ -104,7 +104,6 @@ func mapUserToDTO(user *db.User) *UserDTO {
 		IsPremium: user.IsPremium != nil && *user.IsPremium,
 	}
 
-	// Handle optional fields
 	if user.FirstName != nil {
 		dto.FirstName = *user.FirstName
 	}
@@ -125,7 +124,6 @@ func isValidUsername(username string) bool {
 	return match
 }
 
-// isValidEmail validates an email format
 func isValidEmail(email string) bool {
 	email = strings.TrimSpace(email)
 	pattern := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
