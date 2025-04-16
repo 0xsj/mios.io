@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -9,10 +10,12 @@ import (
 	"github.com/0xsj/gin-sqlc/api"
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
 	"github.com/0xsj/gin-sqlc/repository"
+	"github.com/google/uuid"
 )
 
 type UserService interface {
 	CreateUser(ctx context.Context, input CreateUserInput) (*UserDTO, error)
+	GetUser(ctx context.Context, id string) (*UserDTO, error)
 }
 
 type CreateUserInput struct {
@@ -73,6 +76,26 @@ func (s *userService) CreateUser(ctx context.Context, input CreateUserInput) (*U
 	return mapUserToDTO(user), nil
 }
 
+
+func (s *userService) GetUser(ctx context.Context, id string) (*UserDTO, error) {
+	userID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, api.ErrInvalidInput
+	}
+
+	user, err := s.userRepo.GetUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, repository.ErrRecordNotFound) {
+			return nil, api.ErrNotFound
+		}
+		return nil, api.ErrInternalServer
+	}
+
+	return mapUserToDTO(user), nil
+}
+
+
+
 func mapUserToDTO(user *db.User) *UserDTO {
 	dto := &UserDTO{
 		ID:        user.UserID.String(),
@@ -81,7 +104,6 @@ func mapUserToDTO(user *db.User) *UserDTO {
 		IsPremium: user.IsPremium != nil && *user.IsPremium,
 	}
 
-	// Handle optional fields
 	if user.FirstName != nil {
 		dto.FirstName = *user.FirstName
 	}
@@ -102,7 +124,6 @@ func isValidUsername(username string) bool {
 	return match
 }
 
-// isValidEmail validates an email format
 func isValidEmail(email string) bool {
 	email = strings.TrimSpace(email)
 	pattern := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`

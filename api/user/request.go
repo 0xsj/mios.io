@@ -1,3 +1,4 @@
+// user/request.go
 package user
 
 import "github.com/google/uuid"
@@ -9,7 +10,6 @@ type CreateUserRequest struct {
 	LastName  string `json:"last_name"`
 }
 
-// UserResponse represents the user data returned in responses
 type UserResponse struct {
 	ID        uuid.UUID `json:"id"`
 	Username  string    `json:"username"`

@@ -18,7 +18,7 @@ var (
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (*db.User, error)
-	// GetUser(ctx context.Context, userID uuid.UUID) (db.User, error)
+	GetUser(ctx context.Context, userID uuid.UUID) (*db.User, error)
 	// GetUserByUsername(ctx context.Context, username string) (db.User, error)
 	// GetUserByEmail(ctx context.Context, email string) (db.User, error)
 	// UpdateUser(ctx context.Context, arg UpdateUserParams) error
@@ -102,4 +102,8 @@ func (r *SQLCUserRepository) CreateUser(ctx context.Context, arg CreateUserParam
 	}
 
 	return user, nil
+}
+
+func (r *SQLCUserRepository) GetUser(ctx context.Context, userID uuid.UUID) (*db.User, error) {
+	return r.db.GetUser(ctx, userID)
 }

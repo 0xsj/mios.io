@@ -24,6 +24,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	userGroup := r.Group("/api/users")
 	{
 		userGroup.POST("", h.CreateUser)
+		userGroup.GET("/:id", h.GetUser)
 	}
 }
 
@@ -63,4 +64,26 @@ func (h *Handler) CreateUser(c *gin.Context) {
 	}
 
 	api.RespondWithSuccess(c, response, "User created successfully", http.StatusCreated)
+}
+
+func (h*Handler) GetUser(c *gin.Context) {
+	userID := c.Param("id")
+
+	user, err := h.userService.GetUser(c, userID)
+	if err != nil {
+		api.HandleError(c, err)
+		return
+	}
+
+	id, _ := uuid.Parse(user.ID)
+	response := UserResponse{
+		ID:		id,
+		Username: user.Username,
+		Email: user.Email,
+		FirstName: user.FirstName,
+		LastName: user.LastName,
+		IsPremium: user.IsPremium,
+	}
+
+	api.RespondWithSuccess(c, response, "User retreived successfully!")
 }
