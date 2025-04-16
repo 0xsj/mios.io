@@ -76,7 +76,6 @@ func (s *userService) CreateUser(ctx context.Context, input CreateUserInput) (*U
 	return mapUserToDTO(user), nil
 }
 
-
 func (s *userService) GetUser(ctx context.Context, id string) (*UserDTO, error) {
 	userID, err := uuid.Parse(id)
 	if err != nil {
@@ -93,8 +92,6 @@ func (s *userService) GetUser(ctx context.Context, id string) (*UserDTO, error) 
 
 	return mapUserToDTO(user), nil
 }
-
-
 
 func mapUserToDTO(user *db.User) *UserDTO {
 	dto := &UserDTO{

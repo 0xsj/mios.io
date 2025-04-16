@@ -66,7 +66,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 	api.RespondWithSuccess(c, response, "User created successfully", http.StatusCreated)
 }
 
-func (h*Handler) GetUser(c *gin.Context) {
+func (h *Handler) GetUser(c *gin.Context) {
 	userID := c.Param("id")
 
 	user, err := h.userService.GetUser(c, userID)
@@ -77,11 +77,11 @@ func (h*Handler) GetUser(c *gin.Context) {
 
 	id, _ := uuid.Parse(user.ID)
 	response := UserResponse{
-		ID:		id,
-		Username: user.Username,
-		Email: user.Email,
+		ID:        id,
+		Username:  user.Username,
+		Email:     user.Email,
 		FirstName: user.FirstName,
-		LastName: user.LastName,
+		LastName:  user.LastName,
 		IsPremium: user.IsPremium,
 	}
 
