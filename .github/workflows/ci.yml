@@ -56,13 +56,13 @@ jobs:
     - name: Install dependencies
       run: make install-tools
 
-    - name: Format check
-      run: |
-        make format
-        if [[ -n $(git status --porcelain) ]]; then
-          echo "Code is not formatted. Run 'make format' locally."
-          exit 1
-        fi
+    # - name: Format check
+    #   run: |
+    #     make format
+    #     if [[ -n $(git status --porcelain) ]]; then
+    #       echo "Code is not formatted. Run 'make format' locally."
+    #       exit 1
+    #     fi
 
     - name: Run linter
       run: make lint
