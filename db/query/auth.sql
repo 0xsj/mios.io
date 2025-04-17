@@ -5,12 +5,12 @@ INSERT INTO auth (
     $1, $2, $3, $4, $5
 ) RETURNING *;
 
--- name : GetAuthByUserID :one
+-- name: GetAuthByUserID :one
 SELECT * FROM auth
 WHERE user_id = $1 LIMIT 1;
 
 -- name: UpdatePassword :exec
-UPDATE auth 
+UPDATE auth
 SET
     password_hash = $2,
     salt = $3,
@@ -30,21 +30,22 @@ UPDATE auth
 SET
     reset_token = $2,
     reset_token_expires_at = $3,
+    updated_at = CURRENT_TIMESTAMP
 WHERE user_id = $1;
 
 -- name: GetAuthByResetToken :one
-SELECT * FROM auth 
-WHERE reset_token = $1
+SELECT * FROM auth
+WHERE reset_token = $1 
 AND reset_token_expires_at > CURRENT_TIMESTAMP
 LIMIT 1;
 
 -- name: UpdateLastLogin :exec
-UPDATE auth 
+UPDATE auth
 SET
     last_login = CURRENT_TIMESTAMP,
     updated_at = CURRENT_TIMESTAMP
 WHERE user_id = $1;
 
--- name: DeleteAuth :exec 
-DELETE FROM auth 
+-- name: DeleteAuth :exec
+DELETE FROM auth
 WHERE user_id = $1;
