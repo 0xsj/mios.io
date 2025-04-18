@@ -25,6 +25,8 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	{
 		userGroup.POST("", h.CreateUser)
 		userGroup.GET("/:id", h.GetUser)
+		userGroup.GET("/username/:username", h.GetUserByUsername)
+		userGroup.GET("/email/:email", h.GetUserByEmail)
 	}
 }
 
@@ -86,4 +88,56 @@ func (h *Handler) GetUser(c *gin.Context) {
 	}
 
 	api.RespondWithSuccess(c, response, "User retreived successfully!")
+}
+
+func (h *Handler) GetUserByUsername(c *gin.Context) {
+	username := c.Param("username")
+	if username == "" {
+		api.HandleError(c, api.ErrInvalidInput)
+		return
+	}
+
+	user, err := h.userService.GetUserByUsername(c, username)
+	if err != nil {
+		api.HandleError(c, err)
+		return
+	}
+
+	id, _ := uuid.Parse(user.ID)
+	response := UserResponse{
+		ID:        id,
+        Username:  user.Username,
+        Email:     user.Email,
+        FirstName: user.FirstName,
+        LastName:  user.LastName,
+        IsPremium: user.IsPremium,
+	}
+
+	api.RespondWithSuccess(c, response, "User retreived successfully")
+}
+
+func (h *Handler) GetUserByEmail(c *gin.Context) {
+	email := c.Param("email")
+	if email == "" {
+		api.HandleError(c, api.ErrInvalidInput)
+		return
+	}
+
+	user, err := h.userService.GetUserByEmail(c, email)
+	if err != nil {
+		api.HandleError(c, err)
+		return
+	}
+
+	id, _ := uuid.Parse(user.ID)
+    response := UserResponse{
+        ID:        id,
+        Username:  user.Username,
+        Email:     user.Email,
+        FirstName: user.FirstName,
+        LastName:  user.LastName,
+        IsPremium: user.IsPremium,
+    }
+    
+	api.RespondWithSuccess(c, response, "User retreived successfully")
 }
