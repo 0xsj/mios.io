@@ -19,8 +19,8 @@ var (
 type UserRepository interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (*db.User, error)
 	GetUser(ctx context.Context, userID uuid.UUID) (*db.User, error)
-	// GetUserByUsername(ctx context.Context, username string) (db.User, error)
-	// GetUserByEmail(ctx context.Context, email string) (db.User, error)
+	GetUserByUsername(ctx context.Context, username string) (*db.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*db.User, error)
 	// UpdateUser(ctx context.Context, arg UpdateUserParams) error
 	// UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error
 	// UpdateEmail(ctx context.Context, userID uuid.UUID, email string) error
@@ -105,5 +105,26 @@ func (r *SQLCUserRepository) CreateUser(ctx context.Context, arg CreateUserParam
 }
 
 func (r *SQLCUserRepository) GetUser(ctx context.Context, userID uuid.UUID) (*db.User, error) {
-	return r.db.GetUser(ctx, userID)
+	user, err := r.db.GetUser(ctx, userID)
+	if err != nil {
+		return nil, ErrRecordNotFound
+	}
+
+	return user, nil
+}
+
+func (r *SQLCUserRepository) GetUserByUsername(ctx context.Context, username string) (*db.User, error) {
+	user, err := r.db.GetUserByUsername(ctx, username) 
+	if err != nil {
+		return nil, ErrRecordNotFound
+	}
+	return user, nil
+}
+
+func (r *SQLCUserRepository) GetUserByEmail(ctx context.Context, email string) (*db.User, error) {
+	user, err := r.db.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, ErrRecordNotFound
+	}
+	return user, nil
 }

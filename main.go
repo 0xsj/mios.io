@@ -79,8 +79,8 @@ func main() {
 	// Setup router
 	fmt.Println("Setting up Gin router...")
 	router := gin.Default()
-	router.Use(gin.Logger())
-	router.Use(gin.Recovery())
+	// router.Use(gin.Logger())
+	// router.Use(gin.Recovery())
 
 	// Register routes
 	fmt.Println("Registering API routes...")

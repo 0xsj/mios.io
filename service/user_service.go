@@ -16,6 +16,8 @@ import (
 type UserService interface {
 	CreateUser(ctx context.Context, input CreateUserInput) (*UserDTO, error)
 	GetUser(ctx context.Context, id string) (*UserDTO, error)
+	GetUserByUsername(ctx context.Context, username string) (*UserDTO, error)
+	GetUserByEmail(ctx context.Context, email string) (*UserDTO, error)
 }
 
 type CreateUserInput struct {
@@ -92,6 +94,32 @@ func (s *userService) GetUser(ctx context.Context, id string) (*UserDTO, error) 
 
 	return mapUserToDTO(user), nil
 }
+
+func (s *userService) GetUserByUsername(ctx context.Context, username string) (*UserDTO, error) {
+	user, err := s.userRepo.GetUserByUsername(ctx, username)
+	if err != nil {
+		if errors.Is(err, repository.ErrRecordNotFound) {
+			return nil, api.ErrNotFound
+		}
+		return nil, api.ErrInternalServer
+	}
+
+	return mapUserToDTO(user), nil
+}
+
+
+func (s *userService) GetUserByEmail(ctx context.Context, email string) (*UserDTO, error) {
+	user, err := s.userRepo.GetUserByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, repository.ErrRecordNotFound) {
+			return nil, api.ErrNotFound
+		}
+		return nil, api.ErrInternalServer
+	}
+
+	return mapUserToDTO(user), nil
+}
+
 
 func mapUserToDTO(user *db.User) *UserDTO {
 	dto := &UserDTO{
