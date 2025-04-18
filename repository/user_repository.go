@@ -21,7 +21,7 @@ type UserRepository interface {
 	GetUser(ctx context.Context, userID uuid.UUID) (*db.User, error)
 	GetUserByUsername(ctx context.Context, username string) (*db.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*db.User, error)
-	// UpdateUser(ctx context.Context, arg UpdateUserParams) error
+	UpdateUser(ctx context.Context, arg UpdateUserParams) error
 	// UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error
 	// UpdateEmail(ctx context.Context, userID uuid.UUID, email string) error
 	// UpdatePremiumStatus(ctx context.Context, userID uuid.UUID, isPremium bool) error
@@ -128,3 +128,53 @@ func (r *SQLCUserRepository) GetUserByEmail(ctx context.Context, email string) (
 	}
 	return user, nil
 }
+
+
+func (r *SQLCUserRepository) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
+	var firstNamePtr, lastNamePtr, profileImageURLPtr, bioPtr, themePtr * string
+
+	if arg.FirstName != "" {
+		firstNamePtr = &arg.FirstName
+	}
+
+	if arg.LastName != "" {
+		lastNamePtr = &arg.LastName
+	}
+
+	if arg.ProfileImageURL != "" {
+		profileImageURLPtr = &arg.ProfileImageURL
+	}
+
+	if arg.Bio != "" {
+		bioPtr = &arg.Bio
+	}
+
+	if arg.Theme != "" {
+
+
+		themePtr = &arg.Theme
+	}
+
+	params := db.UpdateUserParams{
+        UserID:          arg.UserID,
+        FirstName:       firstNamePtr,
+        LastName:        lastNamePtr,
+        ProfileImageUrl: profileImageURLPtr,
+        Bio:             bioPtr,
+        Theme:           themePtr,
+    }
+
+	err := r.db.UpdateUser(ctx, params)
+	if err != nil {
+		fmt.Printf("Database update error: %v\n", err)
+        pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			if pgErr.Code == "23505" {
+				return ErrDuplicateKey
+			}
+		}
+		return ErrDatabase
+	}
+	return nil
+}
+
