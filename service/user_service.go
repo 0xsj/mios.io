@@ -19,6 +19,7 @@ type UserService interface {
 	GetUserByUsername(ctx context.Context, username string) (*UserDTO, error)
 	GetUserByEmail(ctx context.Context, email string) (*UserDTO, error)
 	UpdateUser(ctx context.Context, id string, input UpdateUserInput) (*UserDTO, error)
+	DeleteUser(ctx context.Context, id string) error
 }
 
 type CreateUserInput struct {
@@ -213,4 +214,26 @@ func isValidEmail(email string) bool {
 	pattern := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
 	match, _ := regexp.MatchString(pattern, email)
 	return match
+}
+
+func (s *userService) DeleteUser(ctx context.Context, id string) error {
+	userID, err := uuid.Parse(id)
+	if err != nil {
+		return api.ErrInvalidInput
+	}
+
+	_, err = s.userRepo.GetUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, repository.ErrRecordNotFound) {
+			return api.ErrNotFound
+		}
+		return api.ErrInternalServer
+	}
+
+	err = s.userRepo.DeleteUser(ctx, userID)
+	if err != nil {
+		return api.ErrInternalServer
+	}
+
+	return nil
 }
