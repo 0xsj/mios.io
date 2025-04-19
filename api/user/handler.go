@@ -141,3 +141,42 @@ func (h *Handler) GetUserByEmail(c *gin.Context) {
     
 	api.RespondWithSuccess(c, response, "User retreived successfully")
 }
+
+
+
+func (h *Handler) UpdateUser(c *gin.Context) {
+    userID := c.Param("id")
+    
+    var req UpdateUserRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        fmt.Printf("Request binding error: %v\n", err)
+        api.HandleError(c, api.ErrInvalidInput)
+        return
+    }
+    
+    input := service.UpdateUserInput{
+        Username:  req.Username,
+        Email:     req.Email,
+        FirstName: req.FirstName,
+        LastName:  req.LastName,
+    }
+    
+    updatedUser, err := h.userService.UpdateUser(c, userID, input)
+    if err != nil {
+        fmt.Printf("Service error: %v\n", err)
+        api.HandleError(c, err)
+        return
+    }
+    
+    id, _ := uuid.Parse(updatedUser.ID)
+    response := UserResponse{
+        ID:        id,
+        Username:  updatedUser.Username,
+        Email:     updatedUser.Email,
+        FirstName: updatedUser.FirstName,
+        LastName:  updatedUser.LastName,
+        IsPremium: updatedUser.IsPremium,
+    }
+    
+    api.RespondWithSuccess(c, response, "User updated successfully")
+}

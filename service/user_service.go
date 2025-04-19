@@ -18,6 +18,7 @@ type UserService interface {
 	GetUser(ctx context.Context, id string) (*UserDTO, error)
 	GetUserByUsername(ctx context.Context, username string) (*UserDTO, error)
 	GetUserByEmail(ctx context.Context, email string) (*UserDTO, error)
+	UpdateUser(ctx context.Context, id string, input UpdateUserInput) (*UserDTO, error)
 }
 
 type CreateUserInput struct {
