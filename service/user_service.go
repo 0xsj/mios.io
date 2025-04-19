@@ -27,6 +27,13 @@ type CreateUserInput struct {
 	LastName  string `json:"last_name"`
 }
 
+type UpdateUserInput struct {
+    Username  *string `json:"username"`
+    Email     *string `json:"email"`
+    FirstName *string `json:"first_name"`
+    LastName  *string `json:"last_name"`
+}
+
 type UserDTO struct {
 	ID        string `json:"id"`
 	Username  string `json:"username"`
@@ -118,6 +125,57 @@ func (s *userService) GetUserByEmail(ctx context.Context, email string) (*UserDT
 	}
 
 	return mapUserToDTO(user), nil
+}
+
+func (s *userService) UpdateUser(ctx context.Context, id string, input UpdateUserInput) (*UserDTO, error) {
+    userID, err := uuid.Parse(id)
+    if err != nil {
+        return nil, api.ErrInvalidInput
+    }
+    
+    if input.Username != nil && !isValidUsername(*input.Username) {
+        return nil, api.ErrInvalidInput
+    }
+    
+    if input.Email != nil && !isValidEmail(*input.Email) {
+        return nil, api.ErrInvalidInput
+    }
+    
+    params := repository.UpdateUserParams{
+        UserID: userID,
+    }
+    
+    if input.Username != nil {
+        params.Username = *input.Username
+    }
+    
+    if input.Email != nil {
+        params.Email = *input.Email
+    }
+    
+    if input.FirstName != nil {
+        params.FirstName = *input.FirstName
+    }
+    
+    if input.LastName != nil {
+        params.LastName = *input.LastName
+    }
+    
+    
+    err = s.userRepo.UpdateUser(ctx, params)
+    if err != nil {
+        if err == repository.ErrDuplicateKey {
+            return nil, api.ErrDuplicateEntry
+        }
+        return nil, api.ErrInternalServer
+    }
+    
+    updatedUser, err := s.userRepo.GetUser(ctx, userID)
+    if err != nil {
+        return nil, api.ErrInternalServer
+    }
+    
+    return mapUserToDTO(updatedUser), nil
 }
 
 
