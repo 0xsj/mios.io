@@ -182,3 +182,15 @@ func (h *Handler) UpdateUser(c *gin.Context) {
     
     api.RespondWithSuccess(c, response, "User updated successfully")
 }
+
+func (h *Handler) DeleteUser(c *gin.Context) {
+	userID := c.Param("id")
+
+	err := h.userService.DeleteUser(c, userID)
+	if err != nil {
+		api.HandleError(c, err)
+		return
+	}
+
+	api.RespondWithSuccess(c, nil, "User deleted successfully", http.StatusOK)
+}
