@@ -27,6 +27,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		userGroup.GET("/:id", h.GetUser)
 		userGroup.GET("/username/:username", h.GetUserByUsername)
 		userGroup.GET("/email/:email", h.GetUserByEmail)
+		userGroup.PUT("/:id", h.UpdateUser)
 	}
 }
 
