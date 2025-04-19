@@ -25,7 +25,7 @@ type UserRepository interface {
 	// UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error
 	// UpdateEmail(ctx context.Context, userID uuid.UUID, email string) error
 	// UpdatePremiumStatus(ctx context.Context, userID uuid.UUID, isPremium bool) error
-	// DeleteUser(ctx context.Context, userID uuid.UUID) error
+	DeleteUser(ctx context.Context, userID uuid.UUID) error
 }
 
 type CreateUserParams struct {
@@ -212,4 +212,14 @@ func (r *SQLCUserRepository) UpdateUser(ctx context.Context, arg UpdateUserParam
     }
     
     return nil
+}
+
+
+func (r *SQLCUserRepository) DeleteUser(ctx context.Context, userID uuid.UUID) error {
+	err := r.db.DeleteUser(ctx, userID)
+	if err != nil {
+		return ErrDatabase
+	}
+
+	return nil
 }
