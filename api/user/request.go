@@ -18,3 +18,10 @@ type UserResponse struct {
 	LastName  string    `json:"last_name,omitempty"`
 	IsPremium bool      `json:"is_premium"`
 }
+
+type UpdateUserRequest struct {
+    Username  *string `json:"username"`
+    Email     *string `json:"email"`
+    FirstName *string `json:"first_name"`
+    LastName  *string `json:"last_name"`
+}
