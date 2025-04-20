@@ -22,18 +22,18 @@ var (
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (*db.User, error)
-	// GetUser(ctx context.Context, userID uuid.UUID) (*db.User, error)
-	// GetUserByUsername(ctx context.Context, username string) (*db.User, error)
-	// GetUserByHandle(ctx context.Context, handle string) (*db.User, error)
-	// GetUserByEmail(ctx context.Context, email string) (*db.User, error)
-	// UpdateUser(ctx context.Context, arg UpdateUserParams) error
-	// UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error
-	// UpdateHandle(ctx context.Context, userID uuid.UUID, handle string) error
-	// UpdateEmail(ctx context.Context, userID uuid.UUID, email string) error
-	// UpdatePremiumStatus(ctx context.Context, userID uuid.UUID, isPremium bool) error
-	// UpdateAdminStatus(ctx context.Context, userID uuid.UUID, isAdmin bool) error
-	// UpdateOnboardedStatus(ctx context.Context, userID uuid.UUID, onboarded bool) error
-	// DeleteUser(ctx context.Context, userID uuid.UUID) error
+	GetUser(ctx context.Context, userID uuid.UUID) (*db.User, error)
+	GetUserByUsername(ctx context.Context, username string) (*db.User, error)
+	GetUserByHandle(ctx context.Context, handle string) (*db.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*db.User, error)
+	UpdateUser(ctx context.Context, arg UpdateUserParams) error
+	UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error
+	UpdateHandle(ctx context.Context, userID uuid.UUID, handle string) error
+	UpdateEmail(ctx context.Context, userID uuid.UUID, email string) error
+	UpdatePremiumStatus(ctx context.Context, userID uuid.UUID, isPremium bool) error
+	UpdateAdminStatus(ctx context.Context, userID uuid.UUID, isAdmin bool) error
+	UpdateOnboardedStatus(ctx context.Context, userID uuid.UUID, onboarded bool) error
+	DeleteUser(ctx context.Context, userID uuid.UUID) error
 }
 
 type CreateUserParams struct {
@@ -71,6 +71,28 @@ func NewUserRepository(db *db.Queries) UserRepository {
 	}
 }
 
-func (r *SQLCUserRepository) CreateUser(ctx context.Context, arg CreateUserParams) (*db.User, error) {
-	
-}
+func (r *SQLCUserRepository) CreateUser(ctx context.Context, arg CreateUserParams) (*db.User, error){}
+
+func (r *SQLCUserRepository) GetUser(ctx context.Context, userID uuid.UUID) (*db.User, error ){}
+
+func (r *SQLCUserRepository) GetUserByUsername(ctx context.Context, username string) (*db.User, error) {}
+
+func (r *SQLCUserRepository) GetUserByHandle(ctx context.Context, handle string) (*db.User, error) {}
+
+func (r *SQLCUserRepository) GetUserByEmail(ctx context.Context, email string) (*db.User, error) {}
+
+func (r *SQLCUserRepository) UpdateUser(ctx context.Context, arg UpdateUserParams) error {}
+
+func (r *SQLCUserRepository) UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error {}
+
+func (r *SQLCUserRepository) UpdateHandle(ctx context.Context, userID uuid.UUID, handle string) error {}
+
+func (r *SQLCUserRepository) UpdateEmail(ctx context.Context, userID uuid.UUID, email string) error {}
+
+func (r *SQLCUserRepository) UpdatePremiumStatus(ctx context.Context, userID uuid.UUID, isPremium bool) {}
+
+func (r *SQLCUserRepository) UpdateAdminStatus(ctx context.Context, userID uuid.UUID, isAdmin bool) error {}
+
+func (r *SQLCUserRepository) UpdateOnboardedStatus(ctx context.Context, userID uuid.UUID, onboarded bool) {}
+
+func (r *SQLCUserRepository) DeleteUser(ctx context.Context, userID uuid.UUID) error {}
