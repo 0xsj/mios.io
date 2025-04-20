@@ -1,21 +1,26 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TABLE IF NOT EXISTS users (
+-- Core user information
+CREATE TABLE users (
     user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     username VARCHAR(50) UNIQUE NOT NULL,
+    handle VARCHAR(50) UNIQUE,
     email VARCHAR(255) UNIQUE NOT NULL,
     first_name VARCHAR(50),
     last_name VARCHAR(50),
-    profile_image_url TEXT,
     bio TEXT,
-    theme VARCHAR(50) DEFAULT 'default',
+    profile_image_url TEXT,
+    layout_version VARCHAR(20) DEFAULT 'v1',
     custom_domain VARCHAR(255) UNIQUE,
     is_premium BOOLEAN DEFAULT FALSE,
+    is_admin BOOLEAN DEFAULT FALSE,
+    onboarded BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS auth (
+-- Authentication information
+CREATE TABLE auth (
     auth_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     password_hash VARCHAR(255) NOT NULL,
@@ -28,69 +33,55 @@ CREATE TABLE IF NOT EXISTS auth (
     UNIQUE(user_id)
 );
 
-CREATE TABLE IF NOT EXISTS links (
-    link_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+-- Content items (grid layout)
+CREATE TABLE content_items (
+    item_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    title VARCHAR(100) NOT NULL,
-    url TEXT NOT NULL,
-    description TEXT,
-    icon VARCHAR(50),
-    custom_thumbnail_url TEXT,
-    position INTEGER NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    click_count INTEGER DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS social_links (
-    social_link_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    platform VARCHAR(50) NOT NULL, 
-    username VARCHAR(100) NOT NULL,
-    url TEXT NOT NULL,
-    position INTEGER NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, platform)
-);
-
-CREATE TABLE IF NOT EXISTS sections (
-    section_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    title VARCHAR(100) NOT NULL,
-    description TEXT,
-    position INTEGER NOT NULL,
+    content_id VARCHAR(100) NOT NULL, -- External reference ID
+    content_type VARCHAR(50) NOT NULL, -- 'link', 'media', 'rich-text', etc.
+    
+    -- Link data
+    title VARCHAR(100),
+    href TEXT,
+    
+    -- Media data
+    url TEXT,
+    media_type VARCHAR(50),
+    
+    -- Layout information
+    desktop_x INTEGER,
+    desktop_y INTEGER,
+    desktop_style VARCHAR(20), -- e.g., "4x2"
+    mobile_x INTEGER,
+    mobile_y INTEGER, 
+    mobile_style VARCHAR(20),
+    
+    -- Styling and alignment
+    halign VARCHAR(20), -- 'left', 'center', 'right'
+    valign VARCHAR(20), -- 'top', 'middle', 'bottom'
+    
+    -- Additional data
+    content_data JSONB, -- For storing type-specific data
+    overrides JSONB, -- For customizations
+    
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS section_links (
-    section_link_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    section_id UUID NOT NULL REFERENCES sections(section_id) ON DELETE CASCADE,
-    link_id UUID NOT NULL REFERENCES links(link_id) ON DELETE CASCADE,
-    position INTEGER NOT NULL,
-    UNIQUE(section_id, link_id)
-);
-
-CREATE TABLE IF NOT EXISTS analytics (
+-- Analytics for tracking clicks and views
+CREATE TABLE analytics (
     analytics_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    link_id UUID REFERENCES links(link_id) ON DELETE CASCADE,
-    social_link_id UUID REFERENCES social_links(social_link_id) ON DELETE CASCADE,
+    item_id UUID NOT NULL REFERENCES content_items(item_id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     ip_address VARCHAR(45),
     user_agent TEXT,
     referrer TEXT,
-    clicked_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    CHECK (
-        (link_id IS NOT NULL AND social_link_id IS NULL) OR
-        (link_id IS NULL AND social_link_id IS NOT NULL)
-    )
+    clicked_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS themes (
+-- Themes for styling profiles
+CREATE TABLE themes (
     theme_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(50) UNIQUE NOT NULL,
     background_color VARCHAR(20),
@@ -103,7 +94,8 @@ CREATE TABLE IF NOT EXISTS themes (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS user_themes (
+-- User-specific theme customizations
+CREATE TABLE user_themes (
     user_theme_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     name VARCHAR(50) NOT NULL,
@@ -119,11 +111,27 @@ CREATE TABLE IF NOT EXISTS user_themes (
     UNIQUE(user_id, name)
 );
 
-CREATE INDEX idx_auth_user_id ON auth(user_id);
-CREATE INDEX idx_links_user_id ON links(user_id);
-CREATE INDEX idx_social_links_user_id ON social_links(user_id);
-CREATE INDEX idx_sections_user_id ON sections(user_id);
+-- Social connections (OAuth)
+CREATE TABLE oauth_accounts (
+    oauth_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    provider VARCHAR(50) NOT NULL, -- 'google', 'twitter', etc.
+    provider_user_id VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    name VARCHAR(255),
+    access_token TEXT,
+    refresh_token TEXT,
+    token_expires_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(provider, provider_user_id)
+);
+
+-- Create indexes for performance
+CREATE INDEX idx_content_items_user_id ON content_items(user_id);
 CREATE INDEX idx_analytics_user_id ON analytics(user_id);
-CREATE INDEX idx_analytics_link_id ON analytics(link_id);
-CREATE INDEX idx_analytics_social_link_id ON analytics(social_link_id);
+CREATE INDEX idx_analytics_item_id ON analytics(item_id);
+CREATE INDEX idx_auth_user_id ON auth(user_id);
 CREATE INDEX idx_user_themes_user_id ON user_themes(user_id);
+CREATE INDEX idx_oauth_accounts_user_id ON oauth_accounts(user_id);
+CREATE INDEX idx_oauth_provider_id ON oauth_accounts(provider, provider_user_id);

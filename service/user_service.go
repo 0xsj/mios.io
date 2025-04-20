@@ -1,25 +1,20 @@
 package service
 
 import (
-	"context"
-	"errors"
-	"fmt"
 	"regexp"
 	"strings"
 
-	"github.com/0xsj/gin-sqlc/api"
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
 	"github.com/0xsj/gin-sqlc/repository"
-	"github.com/google/uuid"
 )
 
 type UserService interface {
-	CreateUser(ctx context.Context, input CreateUserInput) (*UserDTO, error)
-	GetUser(ctx context.Context, id string) (*UserDTO, error)
-	GetUserByUsername(ctx context.Context, username string) (*UserDTO, error)
-	GetUserByEmail(ctx context.Context, email string) (*UserDTO, error)
-	UpdateUser(ctx context.Context, id string, input UpdateUserInput) (*UserDTO, error)
-	DeleteUser(ctx context.Context, id string) error
+	// CreateUser(ctx context.Context, input CreateUserInput) (*UserDTO, error)
+	// GetUser(ctx context.Context, id string) (*UserDTO, error)
+	// GetUserByUsername(ctx context.Context, username string) (*UserDTO, error)
+	// GetUserByEmail(ctx context.Context, email string) (*UserDTO, error)
+	// UpdateUser(ctx context.Context, id string, input UpdateUserInput) (*UserDTO, error)
+	// DeleteUser(ctx context.Context, id string) error
 }
 
 type CreateUserInput struct {
@@ -55,130 +50,152 @@ func NewUserService(userRepo repository.UserRepository) UserService {
 	}
 }
 
-func (s *userService) CreateUser(ctx context.Context, input CreateUserInput) (*UserDTO, error) {
-	fmt.Println("UserService.CreateUser called")
+// func (s *userService) CreateUser(ctx context.Context, input CreateUserInput) (*UserDTO, error) {
+// 	fmt.Println("UserService.CreateUser called")
 
-	if !isValidUsername(input.Username) {
-		return nil, api.ErrInvalidInput
-	}
+// 	if !isValidUsername(input.Username) {
+// 		return nil, api.ErrInvalidInput
+// 	}
 
-	if !isValidEmail(input.Email) {
-		return nil, api.ErrInvalidInput
-	}
+// 	if !isValidEmail(input.Email) {
+// 		return nil, api.ErrInvalidInput
+// 	}
 
-	params := repository.CreateUserParams{
-		Username:  input.Username,
-		Email:     input.Email,
-		FirstName: input.FirstName,
-		LastName:  input.LastName,
-	}
+// 	params := repository.CreateUserParams{
+// 		Username:  input.Username,
+// 		Email:     input.Email,
+// 		FirstName: input.FirstName,
+// 		LastName:  input.LastName,
+// 	}
 
-	fmt.Printf("Calling repository with params: %+v\n", params)
+// 	fmt.Printf("Calling repository with params: %+v\n", params)
 
-	user, err := s.userRepo.CreateUser(ctx, params)
-	if err != nil {
-		fmt.Printf("Repository error: %v\n", err)
-		if err == repository.ErrDuplicateKey {
-			return nil, api.ErrDuplicateEntry
-		}
-		return nil, api.ErrInternalServer
-	}
+// 	user, err := s.userRepo.CreateUser(ctx, params)
+// 	if err != nil {
+// 		fmt.Printf("Repository error: %v\n", err)
+// 		if err == repository.ErrDuplicateKey {
+// 			return nil, api.ErrDuplicateEntry
+// 		}
+// 		return nil, api.ErrInternalServer
+// 	}
 
-	return mapUserToDTO(user), nil
-}
+// 	return mapUserToDTO(user), nil
+// }
 
-func (s *userService) GetUser(ctx context.Context, id string) (*UserDTO, error) {
-	userID, err := uuid.Parse(id)
-	if err != nil {
-		return nil, api.ErrInvalidInput
-	}
+// func (s *userService) GetUser(ctx context.Context, id string) (*UserDTO, error) {
+// 	userID, err := uuid.Parse(id)
+// 	if err != nil {
+// 		return nil, api.ErrInvalidInput
+// 	}
 
-	user, err := s.userRepo.GetUser(ctx, userID)
-	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
-		}
-		return nil, api.ErrInternalServer
-	}
+// 	user, err := s.userRepo.GetUser(ctx, userID)
+// 	if err != nil {
+// 		if errors.Is(err, repository.ErrRecordNotFound) {
+// 			return nil, api.ErrNotFound
+// 		}
+// 		return nil, api.ErrInternalServer
+// 	}
 
-	return mapUserToDTO(user), nil
-}
+// 	return mapUserToDTO(user), nil
+// }
 
-func (s *userService) GetUserByUsername(ctx context.Context, username string) (*UserDTO, error) {
-	user, err := s.userRepo.GetUserByUsername(ctx, username)
-	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
-		}
-		return nil, api.ErrInternalServer
-	}
+// func (s *userService) GetUserByUsername(ctx context.Context, username string) (*UserDTO, error) {
+// 	user, err := s.userRepo.GetUserByUsername(ctx, username)
+// 	if err != nil {
+// 		if errors.Is(err, repository.ErrRecordNotFound) {
+// 			return nil, api.ErrNotFound
+// 		}
+// 		return nil, api.ErrInternalServer
+// 	}
 
-	return mapUserToDTO(user), nil
-}
+// 	return mapUserToDTO(user), nil
+// }
 
 
-func (s *userService) GetUserByEmail(ctx context.Context, email string) (*UserDTO, error) {
-	user, err := s.userRepo.GetUserByEmail(ctx, email)
-	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
-		}
-		return nil, api.ErrInternalServer
-	}
+// func (s *userService) GetUserByEmail(ctx context.Context, email string) (*UserDTO, error) {
+// 	user, err := s.userRepo.GetUserByEmail(ctx, email)
+// 	if err != nil {
+// 		if errors.Is(err, repository.ErrRecordNotFound) {
+// 			return nil, api.ErrNotFound
+// 		}
+// 		return nil, api.ErrInternalServer
+// 	}
 
-	return mapUserToDTO(user), nil
-}
+// 	return mapUserToDTO(user), nil
+// }
 
-func (s *userService) UpdateUser(ctx context.Context, id string, input UpdateUserInput) (*UserDTO, error) {
-    userID, err := uuid.Parse(id)
-    if err != nil {
-        return nil, api.ErrInvalidInput
-    }
+// func (s *userService) UpdateUser(ctx context.Context, id string, input UpdateUserInput) (*UserDTO, error) {
+//     userID, err := uuid.Parse(id)
+//     if err != nil {
+//         return nil, api.ErrInvalidInput
+//     }
     
-    if input.Username != nil && !isValidUsername(*input.Username) {
-        return nil, api.ErrInvalidInput
-    }
+//     if input.Username != nil && !isValidUsername(*input.Username) {
+//         return nil, api.ErrInvalidInput
+//     }
     
-    if input.Email != nil && !isValidEmail(*input.Email) {
-        return nil, api.ErrInvalidInput
-    }
+//     if input.Email != nil && !isValidEmail(*input.Email) {
+//         return nil, api.ErrInvalidInput
+//     }
     
-    params := repository.UpdateUserParams{
-        UserID: userID,
-    }
+//     params := repository.UpdateUserParams{
+//         UserID: userID,
+//     }
     
-    if input.Username != nil {
-        params.Username = *input.Username
-    }
+//     if input.Username != nil {
+//         params.Username = *input.Username
+//     }
     
-    if input.Email != nil {
-        params.Email = *input.Email
-    }
+//     if input.Email != nil {
+//         params.Email = *input.Email
+//     }
     
-    if input.FirstName != nil {
-        params.FirstName = *input.FirstName
-    }
+//     if input.FirstName != nil {
+//         params.FirstName = *input.FirstName
+//     }
     
-    if input.LastName != nil {
-        params.LastName = *input.LastName
-    }
+//     if input.LastName != nil {
+//         params.LastName = *input.LastName
+//     }
     
     
-    err = s.userRepo.UpdateUser(ctx, params)
-    if err != nil {
-        if err == repository.ErrDuplicateKey {
-            return nil, api.ErrDuplicateEntry
-        }
-        return nil, api.ErrInternalServer
-    }
+//     err = s.userRepo.UpdateUser(ctx, params)
+//     if err != nil {
+//         if err == repository.ErrDuplicateKey {
+//             return nil, api.ErrDuplicateEntry
+//         }
+//         return nil, api.ErrInternalServer
+//     }
     
-    updatedUser, err := s.userRepo.GetUser(ctx, userID)
-    if err != nil {
-        return nil, api.ErrInternalServer
-    }
+//     updatedUser, err := s.userRepo.GetUser(ctx, userID)
+//     if err != nil {
+//         return nil, api.ErrInternalServer
+//     }
     
-    return mapUserToDTO(updatedUser), nil
-}
+//     return mapUserToDTO(updatedUser), nil
+// }
+
+// func (s *userService) DeleteUser(ctx context.Context, id string) error {
+// 	userID, err := uuid.Parse(id)
+// 	if err != nil {
+// 		return api.ErrInvalidInput
+// 	}
+
+// 	_, err = s.userRepo.GetUser(ctx, userID)
+// 	if err != nil {
+// 		if errors.Is(err, repository.ErrRecordNotFound) {
+// 			return api.ErrNotFound
+// 		}
+// 		return api.ErrInternalServer
+// 	}
+
+// 	err = s.userRepo.DeleteUser(ctx, userID)
+// 	if err != nil {
+// 		return api.ErrInternalServer
+// 	}
+
+// 	return nil
+// }
 
 
 func mapUserToDTO(user *db.User) *UserDTO {
@@ -216,24 +233,3 @@ func isValidEmail(email string) bool {
 	return match
 }
 
-func (s *userService) DeleteUser(ctx context.Context, id string) error {
-	userID, err := uuid.Parse(id)
-	if err != nil {
-		return api.ErrInvalidInput
-	}
-
-	_, err = s.userRepo.GetUser(ctx, userID)
-	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return api.ErrNotFound
-		}
-		return api.ErrInternalServer
-	}
-
-	err = s.userRepo.DeleteUser(ctx, userID)
-	if err != nil {
-		return api.ErrInternalServer
-	}
-
-	return nil
-}

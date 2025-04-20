@@ -1,9 +1,10 @@
 -- name: CreateUser :one
 INSERT INTO users (
-    username, email, first_name, last_name, 
-    profile_image_url, bio, theme
+    username, handle, email, first_name, last_name, 
+    bio, profile_image_url, layout_version, custom_domain, 
+    is_premium, is_admin, onboarded
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
 ) RETURNING *;
 
 -- name: GetUser :one
@@ -14,29 +15,46 @@ WHERE user_id = $1 LIMIT 1;
 SELECT * FROM users
 WHERE username = $1 LIMIT 1;
 
+-- name: GetUserByHandle :one
+SELECT * FROM users
+WHERE handle = $1 LIMIT 1;
+
 -- name: GetUserByEmail :one
 SELECT * FROM users
 WHERE email = $1 LIMIT 1;
+
+-- name: ListUsers :many
+SELECT * FROM users
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2;
 
 -- name: UpdateUser :exec
 UPDATE users
 SET 
     first_name = COALESCE($2, first_name),
     last_name = COALESCE($3, last_name),
-    profile_image_url = COALESCE($4, profile_image_url),
-    bio = COALESCE($5, bio),
-    theme = COALESCE($6, theme),
+    bio = COALESCE($4, bio),
+    profile_image_url = COALESCE($5, profile_image_url),
+    layout_version = COALESCE($6, layout_version),
+    custom_domain = COALESCE($7, custom_domain),
     updated_at = CURRENT_TIMESTAMP
 WHERE user_id = $1;
 
--- name: UpdateUserUsername :exec
+-- name: UpdateUsername :exec
 UPDATE users
 SET
     username = $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE user_id = $1;
 
--- name: UpdateUserEmail :exec
+-- name: UpdateHandle :exec
+UPDATE users
+SET
+    handle = $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = $1;
+
+-- name: UpdateEmail :exec
 UPDATE users
 SET
     email = $2,
@@ -47,6 +65,20 @@ WHERE user_id = $1;
 UPDATE users
 SET
     is_premium = $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = $1;
+
+-- name: UpdateUserAdminStatus :exec
+UPDATE users
+SET
+    is_admin = $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE user_id = $1;
+
+-- name: UpdateUserOnboardedStatus :exec
+UPDATE users
+SET
+    onboarded = $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE user_id = $1;
 
