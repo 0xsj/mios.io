@@ -8,17 +8,17 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgtype"
 )
 
 type Analytic struct {
-	AnalyticsID  uuid.UUID  `json:"analytics_id"`
-	LinkID       *uuid.UUID `json:"link_id"`
-	SocialLinkID *uuid.UUID `json:"social_link_id"`
-	UserID       uuid.UUID  `json:"user_id"`
-	IpAddress    *string    `json:"ip_address"`
-	UserAgent    *string    `json:"user_agent"`
-	Referrer     *string    `json:"referrer"`
-	ClickedAt    *time.Time `json:"clicked_at"`
+	AnalyticsID uuid.UUID  `json:"analytics_id"`
+	ItemID      uuid.UUID  `json:"item_id"`
+	UserID      uuid.UUID  `json:"user_id"`
+	IpAddress   *string    `json:"ip_address"`
+	UserAgent   *string    `json:"user_agent"`
+	Referrer    *string    `json:"referrer"`
+	ClickedAt   *time.Time `json:"clicked_at"`
 }
 
 type Auth struct {
@@ -31,22 +31,30 @@ type Auth struct {
 	ResetToken          *string    `json:"reset_token"`
 	ResetTokenExpiresAt *time.Time `json:"reset_token_expires_at"`
 	LastLogin           *time.Time `json:"last_login"`
-	UpdatedAt           *time.Time `json:"updated_at"`
 }
 
-type Link struct {
-	LinkID             uuid.UUID  `json:"link_id"`
-	UserID             uuid.UUID  `json:"user_id"`
-	Title              string     `json:"title"`
-	Url                string     `json:"url"`
-	Description        *string    `json:"description"`
-	Icon               *string    `json:"icon"`
-	CustomThumbnailUrl *string    `json:"custom_thumbnail_url"`
-	Position           int32      `json:"position"`
-	IsActive           *bool      `json:"is_active"`
-	ClickCount         *int32     `json:"click_count"`
-	CreatedAt          *time.Time `json:"created_at"`
-	UpdatedAt          *time.Time `json:"updated_at"`
+type ContentItem struct {
+	ItemID       uuid.UUID    `json:"item_id"`
+	UserID       uuid.UUID    `json:"user_id"`
+	ContentID    string       `json:"content_id"`
+	ContentType  string       `json:"content_type"`
+	Title        *string      `json:"title"`
+	Href         *string      `json:"href"`
+	Url          *string      `json:"url"`
+	MediaType    *string      `json:"media_type"`
+	DesktopX     *int32       `json:"desktop_x"`
+	DesktopY     *int32       `json:"desktop_y"`
+	DesktopStyle *string      `json:"desktop_style"`
+	MobileX      *int32       `json:"mobile_x"`
+	MobileY      *int32       `json:"mobile_y"`
+	MobileStyle  *string      `json:"mobile_style"`
+	Halign       *string      `json:"halign"`
+	Valign       *string      `json:"valign"`
+	ContentData  pgtype.JSONB `json:"content_data"`
+	Overrides    pgtype.JSONB `json:"overrides"`
+	IsActive     *bool        `json:"is_active"`
+	CreatedAt    *time.Time   `json:"created_at"`
+	UpdatedAt    *time.Time   `json:"updated_at"`
 }
 
 type OauthAccount struct {
@@ -61,36 +69,6 @@ type OauthAccount struct {
 	TokenExpiresAt *time.Time `json:"token_expires_at"`
 	CreatedAt      *time.Time `json:"created_at"`
 	UpdatedAt      *time.Time `json:"updated_at"`
-}
-
-type Section struct {
-	SectionID   uuid.UUID  `json:"section_id"`
-	UserID      uuid.UUID  `json:"user_id"`
-	Title       string     `json:"title"`
-	Description *string    `json:"description"`
-	Position    int32      `json:"position"`
-	IsActive    *bool      `json:"is_active"`
-	CreatedAt   *time.Time `json:"created_at"`
-	UpdatedAt   *time.Time `json:"updated_at"`
-}
-
-type SectionLink struct {
-	SectionLinkID uuid.UUID `json:"section_link_id"`
-	SectionID     uuid.UUID `json:"section_id"`
-	LinkID        uuid.UUID `json:"link_id"`
-	Position      int32     `json:"position"`
-}
-
-type SocialLink struct {
-	SocialLinkID uuid.UUID  `json:"social_link_id"`
-	UserID       uuid.UUID  `json:"user_id"`
-	Platform     string     `json:"platform"`
-	Username     string     `json:"username"`
-	Url          string     `json:"url"`
-	Position     int32      `json:"position"`
-	IsActive     *bool      `json:"is_active"`
-	CreatedAt    *time.Time `json:"created_at"`
-	UpdatedAt    *time.Time `json:"updated_at"`
 }
 
 type Theme struct {
@@ -109,14 +87,17 @@ type Theme struct {
 type User struct {
 	UserID          uuid.UUID  `json:"user_id"`
 	Username        string     `json:"username"`
+	Handle          string     `json:"handle"`
 	Email           string     `json:"email"`
 	FirstName       *string    `json:"first_name"`
 	LastName        *string    `json:"last_name"`
-	ProfileImageUrl *string    `json:"profile_image_url"`
 	Bio             *string    `json:"bio"`
-	Theme           *string    `json:"theme"`
+	ProfileImageUrl *string    `json:"profile_image_url"`
+	LayoutVersion   *string    `json:"layout_version"`
 	CustomDomain    *string    `json:"custom_domain"`
 	IsPremium       *bool      `json:"is_premium"`
+	IsAdmin         *bool      `json:"is_admin"`
+	Onboarded       *bool      `json:"onboarded"`
 	CreatedAt       *time.Time `json:"created_at"`
 	UpdatedAt       *time.Time `json:"updated_at"`
 }
