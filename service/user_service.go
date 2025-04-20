@@ -162,40 +162,238 @@ func (s *userService) GetUserByHandle(ctx context.Context, handle string) (*User
 
 
 func (s *userService) GetUserByEmail(ctx context.Context, email string) (*UserDTO, error) {
+	user, err := s.userRepo.GetUserByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, repository.ErrRecordNotFound) {
+			return nil, api.ErrNotFound
+		}
+		return nil, api.ErrInternalServer
+	}
+	return mapUserToDTO(user), nil
+}
+
+
+func (s *userService) UpdateUser(ctx context.Context, id string, input UpdateUserInput) (*UserDTO, error) {
+	userID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, api.ErrInvalidInput
+	}
+
+	currentUser, err := s.userRepo.GetUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, repository.ErrRecordNotFound) {
+			return nil, api.ErrNotFound
+		}
+		return nil, api.ErrInternalServer
+	}
+
+	params := repository.UpdateUserParams{
+		UserID: userID,
+	}
+
+	if input.FirstName != nil {
+		params.FirstName = *input.FirstName
+	}
+
+	if input.LastName != nil {
+		params.LastName = *input.LastName
+	}
+
+	if input.Bio != nil {
+		params.Bio = *input.Bio
+	}
+
+	if input.ProfileImageURL != nil {
+		params.ProfileImageURL = *input.ProfileImageURL
+	}
+
+	if input.LayoutVersion != nil {
+		params.LayoutVersion = *input.LayoutVersion
+	}
+
+	if input.CustomDomain != nil {
+		params.CustomDomain = *input.CustomDomain
+	}
+
+	err = s.userRepo.UpdateUser(ctx, params)
+	if err != nil {
+		if err == repository.ErrDuplicateKey {
+			return nil, api.ErrDuplicateEntry
+		}
+		return nil, api.ErrInternalServer
+	}
+
+	if input.Username != nil && *input.Username != currentUser.Username {
+		if !isValidUsername(*input.Username) {
+			return nil, api.ErrInvalidInput
+		}
+		
+		err = s.userRepo.UpdateUsername(ctx, userID, *input.Username)
+		if err != nil {
+			if err == repository.ErrDuplicateKey {
+				return nil, api.ErrDuplicateEntry
+			}
+			return nil, api.ErrInternalServer
+		}
+	}
+
+	if input.Email != nil && *input.Email != currentUser.Email {
+		if !isValidEmail(*input.Email) {
+			return nil, api.ErrInvalidInput
+		}
+
+		err = s.userRepo.UpdateEmail(ctx, userID, *input.Email)
+		if err != nil {
+			if err == repository.ErrDuplicateKey {
+				return nil, api.ErrDuplicateEntry
+			}
+			return nil, api.ErrInternalServer
+		}
+	}
+
+	updatedUser, err := s.userRepo.GetUser(ctx, userID)
+	if err != nil {
+		return nil, api.ErrInternalServer
+	}
+
+	return mapUserToDTO(updatedUser), nil
+
+}
+
+
+func (s *userService) UpdateHandle(ctx context.Context, id string, handle string) (*UserDTO, error) {
+	userID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, api.ErrInvalidInput
+	}
+
+	if !isValidHandle(handle) {
+		return nil, api.ErrInvalidInput
+	}
+
+	err = s.userRepo.UpdateHandle(ctx, userID, handle)
+	if err != nil {
+		if err == repository.ErrDuplicateKey {
+			return nil, api.ErrDuplicateEntry
+		}
+
+		if errors.Is(err,repository.ErrRecordNotFound) {
+			return nil, api.ErrNotFound
+		}
+		return nil, api.ErrInternalServer
+	}
+
+	updatedUser, err := s.userRepo.GetUser(ctx, userID)
+	if err != nil {
+		return nil, api.ErrInternalServer
+	}
+
+	return mapUserToDTO(updatedUser), nil
 	
 }
 
 
-func (s *userService) UpdateUser(ctx context.Context, id string, input UpdateUserInput) (*UserDTO, error) {}
+func (s *userService) UpdatePremiumStatus(ctx context.Context, id string, isPremium bool) (*UserDTO, error) {
+	userID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, api.ErrInvalidInput
+	}
+
+	err = s.userRepo.UpdatePremiumStatus(ctx, userID, isPremium)
+	if err != nil {
+		if errors.Is(err, repository.ErrRecordNotFound) {
+			return nil, api.ErrNotFound
+		}
+		return nil, api.ErrInternalServer
+	}
+
+	updatedUser, err := s.userRepo.GetUser(ctx, userID)
+	if err != nil {
+		return nil, api.ErrInternalServer
+	}
+
+	return mapUserToDTO(updatedUser), nil
+}
 
 
-func (s *userService) UpdateHandle(ctxt context.Context, id string, handle string) (*UserDTO, error) {}
+func (s *userService) UpdateAdminStatus(ctx context.Context, id string, isAdmin bool) (*UserDTO, error) {
+	userID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, api.ErrInvalidInput
+	}
+
+	err = s.userRepo.UpdateAdminStatus(ctx, userID, isAdmin)
+	if err != nil {
+		if errors.Is(err, repository.ErrRecordNotFound) {
+			return nil, api.ErrNotFound
+		}
+		return nil, api.ErrInternalServer
+	}
+
+	updatedUser, err := s.userRepo.GetUser(ctx, userID)
+	if err != nil {
+		return nil, api.ErrInternalServer
+	}
+
+	return mapUserToDTO(updatedUser), nil
+}
 
 
-func (s *userService) UpdatePremiumStatus(ctx context.Context, id string, isPremium bool) (*UserDTO, error) {}
+func (s *userService) UpdateOnboardedStatus(ctx context.Context, id string, onboarded bool) (*UserDTO, error) {
+	userID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, api.ErrInvalidInput
+	}
+
+	err = s.userRepo.UpdateOnboardedStatus(ctx, userID, onboarded)
+	if err != nil {
+		if errors.Is(err, repository.ErrRecordNotFound) {
+			return nil, api.ErrNotFound
+		}
+		return nil, api.ErrInternalServer
+	}
+
+	updatedUser, err := s.userRepo.GetUser(ctx, userID)
+	if err != nil {
+		return nil, api.ErrInternalServer
+	}
+
+	return mapUserToDTO(updatedUser), nil
+}
 
 
-func (s *userService) UpdateAdminStatus(ctx context.Context, id string, isAdmin bool) (*UserDTO, error) {}
+func (s *userService) DeleteUser(ctx context.Context, id string) error {
+	userID, err := uuid.Parse(id)
+	if err != nil {
+		return api.ErrInvalidInput
+	}
 
+	_, err = s.userRepo.GetUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, repository.ErrRecordNotFound) {
+			return api.ErrNotFound
+		}
+		return api.ErrInternalServer
+	}
 
-func (s *userService) UpdateOnboardedStatus(ctx context.Context, id string, onboarded bool) (*UserDTO, error) {}
+	err = s.userRepo.DeleteUser(ctx, userID)
+	if err != nil {
+		return api.ErrInternalServer
+	}
 
-
-func (s *userService) DeleteUser(ctx context.Context, id string) error {}
+	return nil
+}
 
 
 func mapUserToDTO(user *db.User) *UserDTO {
 	dto := &UserDTO{
 		ID:        user.UserID.String(),
 		Username:  user.Username,
+		Handle:    user.Handle,
 		Email:     user.Email,
 		IsPremium: user.IsPremium != nil && *user.IsPremium,
 		IsAdmin:   user.IsAdmin != nil && *user.IsAdmin,
 		Onboarded: user.Onboarded != nil && *user.Onboarded,
-	}
-
-	if user.Handle != nil {
-		dto.Handle = *user.Handle
 	}
 	
 	if user.FirstName != nil {
