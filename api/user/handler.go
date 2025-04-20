@@ -24,11 +24,11 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	userGroup := r.Group("/api/users")
 	{
 		userGroup.POST("", h.CreateUser)
-		userGroup.GET("/:id", h.GetUser)
-		userGroup.GET("/username/:username", h.GetUserByUsername)
-		userGroup.GET("/email/:email", h.GetUserByEmail)
-		userGroup.PUT("/:id", h.UpdateUser)
-		userGroup.DELETE("/:id", h.DeleteUser)
+		// userGroup.GET("/:id", h.GetUser)
+		// userGroup.GET("/username/:username", h.GetUserByUsername)
+		// userGroup.GET("/email/:email", h.GetUserByEmail)
+		// userGroup.PUT("/:id", h.UpdateUser)
+		// userGroup.DELETE("/:id", h.DeleteUser)
 	}
 }
 

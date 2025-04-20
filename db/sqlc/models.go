@@ -87,7 +87,7 @@ type Theme struct {
 type User struct {
 	UserID          uuid.UUID  `json:"user_id"`
 	Username        string     `json:"username"`
-	Handle          *string    `json:"handle"`
+	Handle          string     `json:"handle"`
 	Email           string     `json:"email"`
 	FirstName       *string    `json:"first_name"`
 	LastName        *string    `json:"last_name"`

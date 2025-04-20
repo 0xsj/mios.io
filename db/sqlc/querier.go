@@ -15,7 +15,7 @@ type Querier interface {
 	DeleteUser(ctx context.Context, userID uuid.UUID) error
 	GetUser(ctx context.Context, userID uuid.UUID) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
-	GetUserByHandle(ctx context.Context, handle *string) (*User, error)
+	GetUserByHandle(ctx context.Context, handle string) (*User, error)
 	GetUserByUsername(ctx context.Context, username string) (*User, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]*User, error)
 	UpdateEmail(ctx context.Context, arg UpdateEmailParams) error

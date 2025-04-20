@@ -23,7 +23,7 @@ INSERT INTO users (
 
 type CreateUserParams struct {
 	Username        string  `json:"username"`
-	Handle          *string `json:"handle"`
+	Handle          string  `json:"handle"`
 	Email           string  `json:"email"`
 	FirstName       *string `json:"first_name"`
 	LastName        *string `json:"last_name"`
@@ -143,7 +143,7 @@ SELECT user_id, username, handle, email, first_name, last_name, bio, profile_ima
 WHERE handle = $1 LIMIT 1
 `
 
-func (q *Queries) GetUserByHandle(ctx context.Context, handle *string) (*User, error) {
+func (q *Queries) GetUserByHandle(ctx context.Context, handle string) (*User, error) {
 	row := q.db.QueryRow(ctx, getUserByHandle, handle)
 	var i User
 	err := row.Scan(
@@ -269,7 +269,7 @@ WHERE user_id = $1
 
 type UpdateHandleParams struct {
 	UserID uuid.UUID `json:"user_id"`
-	Handle *string   `json:"handle"`
+	Handle string    `json:"handle"`
 }
 
 func (q *Queries) UpdateHandle(ctx context.Context, arg UpdateHandleParams) error {
