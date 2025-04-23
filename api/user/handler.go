@@ -205,13 +205,20 @@ func (h *Handler) GetUserByEmail(c *gin.Context) {
 
 	id, _ := uuid.Parse(user.ID)
     response := UserResponse{
-        ID:        id,
-        Username:  user.Username,
-        Email:     user.Email,
-        FirstName: user.FirstName,
-        LastName:  user.LastName,
-        IsPremium: user.IsPremium,
-    }
+		ID:              id,
+		Username:        user.Username,
+		Handle:          user.Handle,
+		Email:           user.Email,
+		FirstName:       user.FirstName,
+		LastName:        user.LastName,
+		Bio:             user.Bio,
+		ProfileImageURL: user.ProfileImageURL,
+		LayoutVersion:   user.LayoutVersion,
+		CustomDomain:    user.CustomDomain,
+		IsPremium:       user.IsPremium,
+		IsAdmin:         user.IsAdmin,
+		Onboarded:       user.Onboarded,
+	}
     
 	api.RespondWithSuccess(c, response, "User retreived successfully")
 }
@@ -253,6 +260,150 @@ func (h *Handler) UpdateUser(c *gin.Context) {
     }
     
     api.RespondWithSuccess(c, response, "User updated successfully")
+}
+
+func (h *Handler) UpdateHandle(c *gin.Context) {
+	userID := c.Param("id")
+
+	var req UpdateHandleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		api.HandleError(c, api.ErrInvalidInput)
+		return
+	}
+
+	if req.Handle == "" {
+		api.HandleError(c, api.ErrInvalidInput)
+		return
+	}
+
+	updatedUser, err := h.userService.UpdateHandle(c, userID, req.Handle)
+	if err != nil {
+		api.HandleError(c, err)
+		return
+	}
+
+	id, _ := uuid.Parse(updatedUser.ID)
+	response := UserResponse{
+		ID:              id,
+		Username:        updatedUser.Username,
+		Handle:          updatedUser.Handle,
+		Email:           updatedUser.Email,
+		FirstName:       updatedUser.FirstName,
+		LastName:        updatedUser.LastName,
+		Bio:             updatedUser.Bio,
+		ProfileImageURL: updatedUser.ProfileImageURL,
+		LayoutVersion:   updatedUser.LayoutVersion,
+		CustomDomain:    updatedUser.CustomDomain,
+		IsPremium:       updatedUser.IsPremium,
+		IsAdmin:         updatedUser.IsAdmin,
+		Onboarded:       updatedUser.Onboarded,	
+	}
+
+	api.RespondWithSuccess(c, response, "User handle updated successfully")
+}
+
+func (h *Handler) UpdatePremiumStatus(c *gin.Context) {
+	userID := c.Param("id")
+
+	var req UpdatePremiumStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		api.HandleError(c, api.ErrInvalidInput)
+		return
+	}
+
+	updatedUser, err := h.userService.UpdatePremiumStatus(c, userID, req.IsPremium)
+	if err != nil {
+		api.HandleError(c, err)
+		return
+	}
+
+	id, _ := uuid.Parse(updatedUser.ID)
+	response := UserResponse{
+		ID:              id,
+		Username:        updatedUser.Username,
+		Handle:          updatedUser.Handle,
+		Email:           updatedUser.Email,
+		FirstName:       updatedUser.FirstName,
+		LastName:        updatedUser.LastName,
+		Bio:             updatedUser.Bio,
+		ProfileImageURL: updatedUser.ProfileImageURL,
+		LayoutVersion:   updatedUser.LayoutVersion,
+		CustomDomain:    updatedUser.CustomDomain,
+		IsPremium:       updatedUser.IsPremium,
+		IsAdmin:         updatedUser.IsAdmin,
+		Onboarded:       updatedUser.Onboarded,
+	}
+
+	api.RespondWithSuccess(c, response, "User premium status updated successfully")
+}
+
+func (h *Handler) UpdateAdminstatus(c *gin.Context) {
+	userID := c.Param("id")
+	var req UpdateAdminStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		api.HandleError(c, api.ErrInvalidInput)
+		return
+	}
+
+	updatedUser, err := h.userService.UpdateAdminStatus(c, userID, req.IsAdmin)
+	if err != nil {
+		api.HandleError(c, err)
+		return
+	}
+
+	id, _ := uuid.Parse(updatedUser.ID)
+	response := UserResponse{
+		ID:              id,
+		Username:        updatedUser.Username,
+		Handle:          updatedUser.Handle,
+		Email:           updatedUser.Email,
+		FirstName:       updatedUser.FirstName,
+		LastName:        updatedUser.LastName,
+		Bio:             updatedUser.Bio,
+		ProfileImageURL: updatedUser.ProfileImageURL,
+		LayoutVersion:   updatedUser.LayoutVersion,
+		CustomDomain:    updatedUser.CustomDomain,
+		IsPremium:       updatedUser.IsPremium,
+		IsAdmin:         updatedUser.IsAdmin,
+		Onboarded:       updatedUser.Onboarded,
+	}
+
+	api.RespondWithSuccess(c, response, "User admin status updated successfully")
+}
+
+func (h *Handler) UpdateOnboardedStatus(c *gin.Context) {
+	userID := c.Param("id")
+
+	var req UpdateOnboardedStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		api.HandleError(c, api.ErrInvalidInput)
+		return
+	}
+
+	updatedUser, err := h.userService.UpdateOnboardedStatus(c, userID, req.Onboarded)
+	if err != nil {
+		api.HandleError(c, err)
+		return
+	}
+
+	id, _ := uuid.Parse(updatedUser.ID)
+	response := UserResponse{
+		ID:              id,
+		Username:        updatedUser.Username,
+		Handle:          updatedUser.Handle,
+		Email:           updatedUser.Email,
+		FirstName:       updatedUser.FirstName,
+		LastName:        updatedUser.LastName,
+		Bio:             updatedUser.Bio,
+		ProfileImageURL: updatedUser.ProfileImageURL,
+		LayoutVersion:   updatedUser.LayoutVersion,
+		CustomDomain:    updatedUser.CustomDomain,
+		IsPremium:       updatedUser.IsPremium,
+		IsAdmin:         updatedUser.IsAdmin,
+		Onboarded:       updatedUser.Onboarded,
+	}
+
+	api.RespondWithSuccess(c, response, "Update onboarded ")
 }
 
 func (h *Handler) DeleteUser(c *gin.Context) {
