@@ -11,11 +11,11 @@ const (
 
 var (
 	ErrPasswordTooShort = errors.New("password is too short")
-	ErrPasswordTooWeak = errors.New("password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character")
+	ErrPasswordTooWeak  = errors.New("password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character")
 )
 
 type PasswordConfig struct {
-	MinLength       int
+	MinLength        int
 	RequireUppercase bool
 	RequireLowercase bool
 	RequireDigits    bool
@@ -24,7 +24,7 @@ type PasswordConfig struct {
 
 func DefaultPasswordConfig() PasswordConfig {
 	return PasswordConfig{
-		MinLength:       MinPasswordLength,
+		MinLength:        MinPasswordLength,
 		RequireUppercase: true,
 		RequireLowercase: true,
 		RequireDigits:    true,
@@ -55,7 +55,6 @@ func ValidatePassword(password string, config PasswordConfig) error {
 
 	return nil
 }
-
 
 func CheckPasswordStrength(password string) int {
 	strength := 0

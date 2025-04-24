@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	authapi "github.com/0xsj/gin-sqlc/api/auth"
 	userapi "github.com/0xsj/gin-sqlc/api/user"
 	"github.com/0xsj/gin-sqlc/config"
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
@@ -67,24 +68,26 @@ func main() {
 	// Initialize repository
 	fmt.Println("Initializing user repository...")
 	userRepo := repository.NewUserRepository(queries)
+	authRepo := repository.NewAuthRepository(queries)
 
 	// Initialize service
 	fmt.Println("Initializing user service...")
 	userService := service.NewUserService(userRepo)
+	authService := service.NewAuthService(userRepo, authRepo, cfg.JWTSecret, cfg.GetTokenDuration())
 
 	// Initialize handler
 	fmt.Println("Initializing user handler...")
 	userHandler := userapi.NewHandler(userService)
+	authHandler := authapi.NewHandler(authService)
 
 	// Setup router
 	fmt.Println("Setting up Gin router...")
 	router := gin.Default()
-	// router.Use(gin.Logger())
-	// router.Use(gin.Recovery())
 
 	// Register routes
 	fmt.Println("Registering API routes...")
 	userHandler.RegisterRoutes(router)
+	authHandler.RegisterRoutes(router)
 
 	// Print registered routes for debugging
 	for _, route := range router.Routes() {

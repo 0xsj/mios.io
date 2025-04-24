@@ -9,31 +9,31 @@ import (
 	"github.com/google/uuid"
 )
 
-type TokenType string 
+type TokenType string
 
 const (
-	AccessToken TokenType = "access"
+	AccessToken  TokenType = "access"
 	RefreshToken TokenType = "refresh"
 )
 
 type Claims struct {
-	UserID		string		`json:"user_id"`
-	Username	string		`json:"username"`
-	Email		string		`json:"email"`
-	IsAdmin		bool		`json:"is_admin"`
-	IsPremium	bool		`json:"is_premium"`
-	TokenType	TokenType	`json:"token_type"`
+	UserID    string    `json:"user_id"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	IsAdmin   bool      `json:"is_admin"`
+	IsPremium bool      `json:"is_premium"`
+	TokenType TokenType `json:"token_type"`
 	jwt.RegisteredClaims
 }
 
 type TokenPair struct {
-	AccessToken		string		`json:"access_token"`
-	RefreshToken	string		`json:"refresh_token"`
-	ExpiresAt		int64		`json:"expires_at"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	ExpiresAt    int64  `json:"expires_at"`
 }
 
 type JWTMaker struct {
-	secretKey	string
+	secretKey string
 }
 
 func NewJWTMaker(secretKey string) *JWTMaker {
@@ -50,32 +50,31 @@ func (maker *JWTMaker) CreateToken(
 	isPremium bool,
 	tokenType TokenType,
 	duration time.Duration,
-)(string, time.Time, error){
+) (string, time.Time, error) {
 	expiresAt := time.Now().Add(duration)
 
 	claims := Claims{
-		UserID: userID,
-		Username: username,
-		Email: email,
-		IsAdmin: isAdmin,
+		UserID:    userID,
+		Username:  username,
+		Email:     email,
+		IsAdmin:   isAdmin,
 		IsPremium: isPremium,
 		TokenType: tokenType,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			IssuedAt: jwt.NewNumericDate(time.Now()),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
-			ID: uuid.NewString(),
+			ID:        uuid.NewString(),
 		},
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256,claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(maker.secretKey))
 	if err != nil {
 		return "", time.Time{}, err
 	}
 	return tokenString, expiresAt, nil
 }
-
 
 func (maker *JWTMaker) CreateTokenPair(
 	userID string,
@@ -85,7 +84,7 @@ func (maker *JWTMaker) CreateTokenPair(
 	isPremium bool,
 	accessDuration time.Duration,
 	refreshDuration time.Duration,
-)(*TokenPair, error){
+) (*TokenPair, error) {
 	accessToken, expiresAt, err := maker.CreateToken(
 		userID, username, email, isAdmin, isPremium, AccessToken, accessDuration,
 	)
@@ -101,12 +100,11 @@ func (maker *JWTMaker) CreateTokenPair(
 	}
 
 	return &TokenPair{
-		AccessToken: accessToken,
+		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		ExpiresAt: expiresAt.Unix(),
+		ExpiresAt:    expiresAt.Unix(),
 	}, nil
 }
-
 
 func (maker *JWTMaker) VerifyToken(tokenString string) (*Claims, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
