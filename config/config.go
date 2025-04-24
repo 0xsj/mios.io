@@ -2,6 +2,7 @@ package config
 
 import (
 	"log"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -16,6 +17,10 @@ type Config struct {
 	DBHost     string `mapstructure:"DB_HOSTNAME"`
 	DBPort     string `mapstructure:"DB_PORT"`
 	DBName     string `mapstructure:"DB_NAME"`
+
+	JWTSecret         string `mapstructure:"JWT_SECRET"`
+	TokenHourLifespan int    `mapstructure:"TOKEN_HOUR_LIFESPAN"`
+	APISecret         string `mapstructure:"API_SECRET"`
 }
 
 func LoadConfig(name string, path string) (config Config) {
@@ -32,5 +37,14 @@ func LoadConfig(name string, path string) (config Config) {
 		log.Fatalf("config: %v", err)
 		return
 	}
+
+	if config.TokenHourLifespan <= 0 {
+		config.TokenHourLifespan = 24
+	}
+
 	return
+}
+
+func (c *Config) GetTokenDuration() time.Duration {
+	return time.Duration(c.TokenHourLifespan) * time.Hour
 }

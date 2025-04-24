@@ -73,7 +73,6 @@ type authService struct {
 	tokenExpiry time.Duration
 }
 
-
 func NewAuthService(
 	userRepo repository.UserRepository,
 	authRepo repository.AuthRepository,
@@ -148,10 +147,10 @@ func (s *authService) Register(ctx context.Context, input RegisterInput) (*UserD
 	}
 
 	authParams := repository.CreateAuthParams{
-		UserID: user.UserID,
-		PasswordHash: hashedPassword,
-		Salt: salt,
-		IsEmailVerified: false,
+		UserID:            user.UserID,
+		PasswordHash:      hashedPassword,
+		Salt:              salt,
+		IsEmailVerified:   false,
 		VerificationToken: verificationToken,
 	}
 
@@ -163,7 +162,6 @@ func (s *authService) Register(ctx context.Context, input RegisterInput) (*UserD
 
 	return mapUserToDTO(user), nil
 }
-
 
 func (s *authService) Login(ctx context.Context, input LoginInput) (*TokenResponse, error) {
 	user, err := s.userRepo.GetUserByEmail(ctx, input.Email)
@@ -218,7 +216,7 @@ func (s *authService) Login(ctx context.Context, input LoginInput) (*TokenRespon
 	if err != nil {
 		return nil, api.ErrInternalServer
 	}
-	
+
 	return &TokenResponse{
 		AccessToken:  tokenPair.AccessToken,
 		RefreshToken: tokenPair.RefreshToken,
@@ -285,7 +283,6 @@ func (s *authService) RefreshToken(ctx context.Context, input RefreshTokenReques
 		User:         mapUserToDTO(user),
 	}, nil
 }
-
 
 func (s *authService) GenerateResetToken(ctx context.Context, email string) error {
 	user, err := s.userRepo.GetUserByEmail(ctx, email)
@@ -391,10 +388,10 @@ func (s *authService) Logout(ctx context.Context, userIDStr string) error {
 }
 
 func (s *authService) ValidateToken(ctx context.Context, tokenStr string) (*token.Claims, error) {
-    jwtMaker := token.NewJWTMaker(s.jwtSecret)
-    claims, err := jwtMaker.VerifyToken(tokenStr)
-    if err != nil {
-        return nil, api.ErrUnauthorized
-    }
-    return claims, nil
+	jwtMaker := token.NewJWTMaker(s.jwtSecret)
+	claims, err := jwtMaker.VerifyToken(tokenStr)
+	if err != nil {
+		return nil, api.ErrUnauthorized
+	}
+	return claims, nil
 }
