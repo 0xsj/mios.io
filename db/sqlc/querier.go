@@ -11,20 +11,31 @@ import (
 )
 
 type Querier interface {
+	ClearResetToken(ctx context.Context, userID uuid.UUID) error
+	CreateAuth(ctx context.Context, arg CreateAuthParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (*User, error)
 	DeleteUser(ctx context.Context, userID uuid.UUID) error
+	GetAuthByUserID(ctx context.Context, userID uuid.UUID) (*Auth, error)
 	GetUser(ctx context.Context, userID uuid.UUID) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByHandle(ctx context.Context, handle string) (*User, error)
 	GetUserByUsername(ctx context.Context, username string) (*User, error)
+	IncrementFailedLoginAttempts(ctx context.Context, userID uuid.UUID) error
+	InvalidateRefreshToken(ctx context.Context, userID uuid.UUID) error
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]*User, error)
+	SetAccountLockout(ctx context.Context, arg SetAccountLockoutParams) error
+	SetResetToken(ctx context.Context, arg SetResetTokenParams) error
+	StoreRefreshToken(ctx context.Context, arg StoreRefreshTokenParams) error
 	UpdateEmail(ctx context.Context, arg UpdateEmailParams) error
 	UpdateHandle(ctx context.Context, arg UpdateHandleParams) error
+	UpdateLastLogin(ctx context.Context, userID uuid.UUID) error
+	UpdatePasswordHash(ctx context.Context, arg UpdatePasswordHashParams) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error
 	UpdateUserAdminStatus(ctx context.Context, arg UpdateUserAdminStatusParams) error
 	UpdateUserOnboardedStatus(ctx context.Context, arg UpdateUserOnboardedStatusParams) error
 	UpdateUserPremiumStatus(ctx context.Context, arg UpdateUserPremiumStatusParams) error
 	UpdateUsername(ctx context.Context, arg UpdateUsernameParams) error
+	VerifyEmail(ctx context.Context, userID uuid.UUID) error
 }
 
 var _ Querier = (*Queries)(nil)
