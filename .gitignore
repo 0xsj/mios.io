@@ -44,6 +44,7 @@ go.work
 
 # Air tmp directory
 tmp/
+/tmp
 
 # Generated mock files
 mocks/
