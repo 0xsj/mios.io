@@ -1,9 +1,9 @@
 package middleware
 
-func AuthMiddleware(){}
+func AuthMiddleware() {}
 
-func AdminMiddleware(){}
+func AdminMiddleware() {}
 
-func RequireVerifiedEmail(){}
+func RequireVerifiedEmail() {}
 
-type AuthServiceInterface interface {}
+type AuthServiceInterface interface{}

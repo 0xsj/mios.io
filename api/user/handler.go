@@ -54,18 +54,18 @@ func (h *Handler) CreateUser(c *gin.Context) {
 	}
 
 	input := service.CreateUserInput{
-		Username:  			req.Username,
-		Handle:				handle,
-		Email:     			req.Email,
-		FirstName: 			req.FirstName,
-		LastName:  			req.LastName,
-		Bio:				req.Bio,
-		ProfileImageURL:	req.ProfileImageURL,
-		LayoutVersion:  	req.LayoutVersion,
-		CustomDomain:   	req.CustomDomain,
-		IsPremium:      	req.IsPremium,
-		IsAdmin:        	req.IsAdmin,
-		Onboarded:      	req.Onboarded,
+		Username:        req.Username,
+		Handle:          handle,
+		Email:           req.Email,
+		FirstName:       req.FirstName,
+		LastName:        req.LastName,
+		Bio:             req.Bio,
+		ProfileImageURL: req.ProfileImageURL,
+		LayoutVersion:   req.LayoutVersion,
+		CustomDomain:    req.CustomDomain,
+		IsPremium:       req.IsPremium,
+		IsAdmin:         req.IsAdmin,
+		Onboarded:       req.Onboarded,
 	}
 
 	user, err := h.userService.CreateUser(c, input)
@@ -204,7 +204,7 @@ func (h *Handler) GetUserByEmail(c *gin.Context) {
 	}
 
 	id, _ := uuid.Parse(user.ID)
-    response := UserResponse{
+	response := UserResponse{
 		ID:              id,
 		Username:        user.Username,
 		Handle:          user.Handle,
@@ -219,47 +219,45 @@ func (h *Handler) GetUserByEmail(c *gin.Context) {
 		IsAdmin:         user.IsAdmin,
 		Onboarded:       user.Onboarded,
 	}
-    
+
 	api.RespondWithSuccess(c, response, "User retreived successfully")
 }
 
-
-
 func (h *Handler) UpdateUser(c *gin.Context) {
-    userID := c.Param("id")
-    
-    var req UpdateUserRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
-        fmt.Printf("Request binding error: %v\n", err)
-        api.HandleError(c, api.ErrInvalidInput)
-        return
-    }
-    
-    input := service.UpdateUserInput{
-        Username:  req.Username,
-        Email:     req.Email,
-        FirstName: req.FirstName,
-        LastName:  req.LastName,
-    }
-    
-    updatedUser, err := h.userService.UpdateUser(c, userID, input)
-    if err != nil {
-        fmt.Printf("Service error: %v\n", err)
-        api.HandleError(c, err)
-        return
-    }
-    
-    id, _ := uuid.Parse(updatedUser.ID)
-    response := UserResponse{
-        ID:        id,
-        Username:  updatedUser.Username,
-        Email:     updatedUser.Email,
-        FirstName: updatedUser.FirstName,
-        LastName:  updatedUser.LastName,
-        IsPremium: updatedUser.IsPremium,
-    }
-    
-    api.RespondWithSuccess(c, response, "User updated successfully")
+	userID := c.Param("id")
+
+	var req UpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		fmt.Printf("Request binding error: %v\n", err)
+		api.HandleError(c, api.ErrInvalidInput)
+		return
+	}
+
+	input := service.UpdateUserInput{
+		Username:  req.Username,
+		Email:     req.Email,
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+	}
+
+	updatedUser, err := h.userService.UpdateUser(c, userID, input)
+	if err != nil {
+		fmt.Printf("Service error: %v\n", err)
+		api.HandleError(c, err)
+		return
+	}
+
+	id, _ := uuid.Parse(updatedUser.ID)
+	response := UserResponse{
+		ID:        id,
+		Username:  updatedUser.Username,
+		Email:     updatedUser.Email,
+		FirstName: updatedUser.FirstName,
+		LastName:  updatedUser.LastName,
+		IsPremium: updatedUser.IsPremium,
+	}
+
+	api.RespondWithSuccess(c, response, "User updated successfully")
 }
 
 func (h *Handler) UpdateHandle(c *gin.Context) {
@@ -296,7 +294,7 @@ func (h *Handler) UpdateHandle(c *gin.Context) {
 		CustomDomain:    updatedUser.CustomDomain,
 		IsPremium:       updatedUser.IsPremium,
 		IsAdmin:         updatedUser.IsAdmin,
-		Onboarded:       updatedUser.Onboarded,	
+		Onboarded:       updatedUser.Onboarded,
 	}
 
 	api.RespondWithSuccess(c, response, "User handle updated successfully")

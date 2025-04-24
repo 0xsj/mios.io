@@ -70,7 +70,6 @@ type UserDTO struct {
 	UpdatedAt       string `json:"updated_at,omitempty"`
 }
 
-
 type userService struct {
 	userRepo repository.UserRepository
 }
@@ -80,7 +79,6 @@ func NewUserService(userRepo repository.UserRepository) UserService {
 		userRepo: userRepo,
 	}
 }
-
 
 func (s *userService) CreateUser(ctx context.Context, input CreateUserInput) (*UserDTO, error) {
 	if !isValidUsername(input.Username) {
@@ -109,7 +107,7 @@ func (s *userService) CreateUser(ctx context.Context, input CreateUserInput) (*U
 		IsAdmin:         input.IsAdmin,
 		Onboarded:       input.Onboarded,
 	}
-	
+
 	user, err := s.userRepo.CreateUser(ctx, params)
 	if err != nil {
 		if err == repository.ErrDuplicateKey {
@@ -119,7 +117,6 @@ func (s *userService) CreateUser(ctx context.Context, input CreateUserInput) (*U
 	}
 	return mapUserToDTO(user), nil
 }
-
 
 func (s *userService) GetUser(ctx context.Context, id string) (*UserDTO, error) {
 	userID, err := uuid.Parse(id)
@@ -136,7 +133,6 @@ func (s *userService) GetUser(ctx context.Context, id string) (*UserDTO, error) 
 	return mapUserToDTO(user), nil
 }
 
-
 func (s *userService) GetUserByUsername(ctx context.Context, username string) (*UserDTO, error) {
 	user, err := s.userRepo.GetUserByUsername(ctx, username)
 	if err != nil {
@@ -147,7 +143,6 @@ func (s *userService) GetUserByUsername(ctx context.Context, username string) (*
 	}
 	return mapUserToDTO(user), nil
 }
-
 
 func (s *userService) GetUserByHandle(ctx context.Context, handle string) (*UserDTO, error) {
 	user, err := s.userRepo.GetUserByHandle(ctx, handle)
@@ -160,7 +155,6 @@ func (s *userService) GetUserByHandle(ctx context.Context, handle string) (*User
 	return mapUserToDTO(user), nil
 }
 
-
 func (s *userService) GetUserByEmail(ctx context.Context, email string) (*UserDTO, error) {
 	user, err := s.userRepo.GetUserByEmail(ctx, email)
 	if err != nil {
@@ -171,7 +165,6 @@ func (s *userService) GetUserByEmail(ctx context.Context, email string) (*UserDT
 	}
 	return mapUserToDTO(user), nil
 }
-
 
 func (s *userService) UpdateUser(ctx context.Context, id string, input UpdateUserInput) (*UserDTO, error) {
 	userID, err := uuid.Parse(id)
@@ -227,7 +220,7 @@ func (s *userService) UpdateUser(ctx context.Context, id string, input UpdateUse
 		if !isValidUsername(*input.Username) {
 			return nil, api.ErrInvalidInput
 		}
-		
+
 		err = s.userRepo.UpdateUsername(ctx, userID, *input.Username)
 		if err != nil {
 			if err == repository.ErrDuplicateKey {
@@ -260,7 +253,6 @@ func (s *userService) UpdateUser(ctx context.Context, id string, input UpdateUse
 
 }
 
-
 func (s *userService) UpdateHandle(ctx context.Context, id string, handle string) (*UserDTO, error) {
 	userID, err := uuid.Parse(id)
 	if err != nil {
@@ -277,7 +269,7 @@ func (s *userService) UpdateHandle(ctx context.Context, id string, handle string
 			return nil, api.ErrDuplicateEntry
 		}
 
-		if errors.Is(err,repository.ErrRecordNotFound) {
+		if errors.Is(err, repository.ErrRecordNotFound) {
 			return nil, api.ErrNotFound
 		}
 		return nil, api.ErrInternalServer
@@ -289,9 +281,8 @@ func (s *userService) UpdateHandle(ctx context.Context, id string, handle string
 	}
 
 	return mapUserToDTO(updatedUser), nil
-	
-}
 
+}
 
 func (s *userService) UpdatePremiumStatus(ctx context.Context, id string, isPremium bool) (*UserDTO, error) {
 	userID, err := uuid.Parse(id)
@@ -315,7 +306,6 @@ func (s *userService) UpdatePremiumStatus(ctx context.Context, id string, isPrem
 	return mapUserToDTO(updatedUser), nil
 }
 
-
 func (s *userService) UpdateAdminStatus(ctx context.Context, id string, isAdmin bool) (*UserDTO, error) {
 	userID, err := uuid.Parse(id)
 	if err != nil {
@@ -337,7 +327,6 @@ func (s *userService) UpdateAdminStatus(ctx context.Context, id string, isAdmin 
 
 	return mapUserToDTO(updatedUser), nil
 }
-
 
 func (s *userService) UpdateOnboardedStatus(ctx context.Context, id string, onboarded bool) (*UserDTO, error) {
 	userID, err := uuid.Parse(id)
@@ -361,7 +350,6 @@ func (s *userService) UpdateOnboardedStatus(ctx context.Context, id string, onbo
 	return mapUserToDTO(updatedUser), nil
 }
 
-
 func (s *userService) DeleteUser(ctx context.Context, id string) error {
 	userID, err := uuid.Parse(id)
 	if err != nil {
@@ -384,7 +372,6 @@ func (s *userService) DeleteUser(ctx context.Context, id string) error {
 	return nil
 }
 
-
 func mapUserToDTO(user *db.User) *UserDTO {
 	dto := &UserDTO{
 		ID:        user.UserID.String(),
@@ -395,35 +382,35 @@ func mapUserToDTO(user *db.User) *UserDTO {
 		IsAdmin:   user.IsAdmin != nil && *user.IsAdmin,
 		Onboarded: user.Onboarded != nil && *user.Onboarded,
 	}
-	
+
 	if user.FirstName != nil {
 		dto.FirstName = *user.FirstName
 	}
-	
+
 	if user.LastName != nil {
 		dto.LastName = *user.LastName
 	}
-	
+
 	if user.Bio != nil {
 		dto.Bio = *user.Bio
 	}
-	
+
 	if user.ProfileImageUrl != nil {
 		dto.ProfileImageURL = *user.ProfileImageUrl
 	}
-	
+
 	if user.LayoutVersion != nil {
 		dto.LayoutVersion = *user.LayoutVersion
 	}
-	
+
 	if user.CustomDomain != nil {
 		dto.CustomDomain = *user.CustomDomain
 	}
-	
+
 	if user.CreatedAt != nil {
 		dto.CreatedAt = user.CreatedAt.String()
 	}
-	
+
 	if user.UpdatedAt != nil {
 		dto.UpdatedAt = user.UpdatedAt.String()
 	}

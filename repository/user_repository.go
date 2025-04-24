@@ -14,11 +14,11 @@ var (
 	ErrDuplicateKey   = errors.New("duplicate key violation")
 	ErrDatabase       = errors.New("database error")
 
-	ErrInvalidInput = errors.New("invalid input parameters")
-    ErrPermissionDenied = errors.New("permission denied for operation")
-    ErrForeignKeyViolation = errors.New("foreign key constraint violation")
-    ErrTransactionFailed = errors.New("database transaction failed")
-    ErrConnectionFailed = errors.New("database connection failed")
+	ErrInvalidInput        = errors.New("invalid input parameters")
+	ErrPermissionDenied    = errors.New("permission denied for operation")
+	ErrForeignKeyViolation = errors.New("foreign key constraint violation")
+	ErrTransactionFailed   = errors.New("database transaction failed")
+	ErrConnectionFailed    = errors.New("database connection failed")
 )
 
 type UserRepository interface {
@@ -73,79 +73,79 @@ func NewUserRepository(db *db.Queries) UserRepository {
 }
 
 func (r *SQLCUserRepository) CreateUser(ctx context.Context, arg CreateUserParams) (*db.User, error) {
-    var firstNamePtr, lastNamePtr, bioPtr, profileImageURLPtr *string
-    var layoutVersionPtr, customDomainPtr *string
-    var isPremiumPtr, isAdminPtr, onboardedPtr *bool
-    
-    if arg.FirstName != "" {
-        firstNameCopy := arg.FirstName
-        firstNamePtr = &firstNameCopy
-    }
-    
-    if arg.LastName != "" {
-        lastNameCopy := arg.LastName
-        lastNamePtr = &lastNameCopy
-    }
-    
-    if arg.Bio != "" {
-        bioCopy := arg.Bio
-        bioPtr = &bioCopy
-    }
-    
-    if arg.ProfileImageURL != "" {
-        profileCopy := arg.ProfileImageURL
-        profileImageURLPtr = &profileCopy
-    }
-    
-    if arg.LayoutVersion != "" {
-        layoutCopy := arg.LayoutVersion
-        layoutVersionPtr = &layoutCopy
-    }
-    
-    if arg.CustomDomain != "" {
-        domainCopy := arg.CustomDomain
-        customDomainPtr = &domainCopy
-    }
-    
-    isPremiumCopy := arg.IsPremium
-    isPremiumPtr = &isPremiumCopy
-    
-    isAdminCopy := arg.IsAdmin
-    isAdminPtr = &isAdminCopy
-    
-    onboardedCopy := arg.Onboarded
-    onboardedPtr = &onboardedCopy
-    
-    params := db.CreateUserParams{
-        Username:        arg.Username,
-        Handle:          arg.Handle,
-        Email:           arg.Email,
-        FirstName:       firstNamePtr,
-        LastName:        lastNamePtr,
-        Bio:             bioPtr,
-        ProfileImageUrl: profileImageURLPtr,
-        LayoutVersion:   layoutVersionPtr,
-        CustomDomain:    customDomainPtr,
-        IsPremium:       isPremiumPtr,
-        IsAdmin:         isAdminPtr,
-        Onboarded:       onboardedPtr,
-    }
-    
-    user, err := r.db.CreateUser(ctx, params)
-    if err != nil {
-        pgErr, ok := err.(*pgconn.PgError)
-        if ok {
-            if pgErr.Code == "23505" {
-                return nil, ErrDuplicateKey
-            }
-        }
-        return nil, ErrDatabase
-    }
-    
-    return user, nil
+	var firstNamePtr, lastNamePtr, bioPtr, profileImageURLPtr *string
+	var layoutVersionPtr, customDomainPtr *string
+	var isPremiumPtr, isAdminPtr, onboardedPtr *bool
+
+	if arg.FirstName != "" {
+		firstNameCopy := arg.FirstName
+		firstNamePtr = &firstNameCopy
+	}
+
+	if arg.LastName != "" {
+		lastNameCopy := arg.LastName
+		lastNamePtr = &lastNameCopy
+	}
+
+	if arg.Bio != "" {
+		bioCopy := arg.Bio
+		bioPtr = &bioCopy
+	}
+
+	if arg.ProfileImageURL != "" {
+		profileCopy := arg.ProfileImageURL
+		profileImageURLPtr = &profileCopy
+	}
+
+	if arg.LayoutVersion != "" {
+		layoutCopy := arg.LayoutVersion
+		layoutVersionPtr = &layoutCopy
+	}
+
+	if arg.CustomDomain != "" {
+		domainCopy := arg.CustomDomain
+		customDomainPtr = &domainCopy
+	}
+
+	isPremiumCopy := arg.IsPremium
+	isPremiumPtr = &isPremiumCopy
+
+	isAdminCopy := arg.IsAdmin
+	isAdminPtr = &isAdminCopy
+
+	onboardedCopy := arg.Onboarded
+	onboardedPtr = &onboardedCopy
+
+	params := db.CreateUserParams{
+		Username:        arg.Username,
+		Handle:          arg.Handle,
+		Email:           arg.Email,
+		FirstName:       firstNamePtr,
+		LastName:        lastNamePtr,
+		Bio:             bioPtr,
+		ProfileImageUrl: profileImageURLPtr,
+		LayoutVersion:   layoutVersionPtr,
+		CustomDomain:    customDomainPtr,
+		IsPremium:       isPremiumPtr,
+		IsAdmin:         isAdminPtr,
+		Onboarded:       onboardedPtr,
+	}
+
+	user, err := r.db.CreateUser(ctx, params)
+	if err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			if pgErr.Code == "23505" {
+				return nil, ErrDuplicateKey
+			}
+		}
+		return nil, ErrDatabase
+	}
+
+	return user, nil
 }
 
-func (r *SQLCUserRepository) GetUser(ctx context.Context, userID uuid.UUID) (*db.User, error ){
+func (r *SQLCUserRepository) GetUser(ctx context.Context, userID uuid.UUID) (*db.User, error) {
 	user, err := r.db.GetUser(ctx, userID)
 	if err != nil {
 		return nil, ErrRecordNotFound
@@ -198,15 +198,15 @@ func (r *SQLCUserRepository) UpdateUser(ctx context.Context, arg UpdateUserParam
 	if arg.Bio != "" {
 		bioPtr = &arg.Bio
 	}
-	
+
 	if arg.LayoutVersion != "" {
 		layoutVersionPtr = &arg.LayoutVersion
 	}
-	
+
 	if arg.CustomDomain != "" {
 		customDomainPtr = &arg.CustomDomain
 	}
-	
+
 	params := db.UpdateUserParams{
 		UserID:          arg.UserID,
 		FirstName:       firstNamePtr,
@@ -233,7 +233,7 @@ func (r *SQLCUserRepository) UpdateUser(ctx context.Context, arg UpdateUserParam
 
 func (r *SQLCUserRepository) UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error {
 	params := db.UpdateUsernameParams{
-		UserID: userID,
+		UserID:   userID,
 		Username: username,
 	}
 
@@ -268,7 +268,7 @@ func (r *SQLCUserRepository) UpdateHandle(ctx context.Context, userID uuid.UUID,
 func (r *SQLCUserRepository) UpdateEmail(ctx context.Context, userID uuid.UUID, email string) error {
 	params := db.UpdateEmailParams{
 		UserID: userID,
-		Email: email,
+		Email:  email,
 	}
 
 	err := r.db.UpdateEmail(ctx, params)
@@ -284,7 +284,7 @@ func (r *SQLCUserRepository) UpdateEmail(ctx context.Context, userID uuid.UUID, 
 
 func (r *SQLCUserRepository) UpdatePremiumStatus(ctx context.Context, userID uuid.UUID, isPremium bool) error {
 	params := db.UpdateUserPremiumStatusParams{
-		UserID: userID,
+		UserID:    userID,
 		IsPremium: &isPremium,
 	}
 
@@ -297,7 +297,7 @@ func (r *SQLCUserRepository) UpdatePremiumStatus(ctx context.Context, userID uui
 
 func (r *SQLCUserRepository) UpdateAdminStatus(ctx context.Context, userID uuid.UUID, isAdmin bool) error {
 	params := db.UpdateUserAdminStatusParams{
-		UserID: userID,
+		UserID:  userID,
 		IsAdmin: &isAdmin,
 	}
 
@@ -310,7 +310,7 @@ func (r *SQLCUserRepository) UpdateAdminStatus(ctx context.Context, userID uuid.
 
 func (r *SQLCUserRepository) UpdateOnboardedStatus(ctx context.Context, userID uuid.UUID, onboarded bool) error {
 	params := db.UpdateUserOnboardedStatusParams{
-		UserID: userID,
+		UserID:    userID,
 		Onboarded: &onboarded,
 	}
 

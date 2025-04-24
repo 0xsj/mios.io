@@ -6,15 +6,15 @@ import (
 )
 
 type Session struct {
-	ID		string		`json:"id"`
-	UserID	string		`json:"user_id"`
-	CreatedAt	time.Time	`json:"created_at"`
-	ExpiresAt	time.Time	`json:"expires_at"`
-	UserAgent	string		`json:"user_agent"`
-	IP			string		`json:"ip"`
+	ID        string    `json:"id"`
+	UserID    string    `json:"user_id"`
+	CreatedAt time.Time `json:"created_at"`
+	ExpiresAt time.Time `json:"expires_at"`
+	UserAgent string    `json:"user_agent"`
+	IP        string    `json:"ip"`
 }
 
-type SessionManager struct {}
+type SessionManager struct{}
 
 func NewSessionManager() *SessionManager {
 	return &SessionManager{}
@@ -41,7 +41,6 @@ func (m *SessionManager) CreateSession(userID, userAgent, ip string, duration ti
 	return session, nil
 }
 
-
 func (m *SessionManager) ValidateSession(sessionID string) (*Session, error) {
 	// fetch session
 	// check if session expired
@@ -53,7 +52,7 @@ func (m *SessionManager) RevokeSession(sessionID string) error {
 	return fmt.Errorf("not implemented: requires session repository")
 }
 
-func (m *SessionManager) ExtendedSession(sessionID string, duration time.Duration) error{
+func (m *SessionManager) ExtendedSession(sessionID string, duration time.Duration) error {
 	// update session
 	return fmt.Errorf("not implemented: requires session repository")
 }

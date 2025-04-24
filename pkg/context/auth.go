@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	UserKey = "user"
+	UserKey   = "user"
 	UserIDKey = "user_id"
-	TokenKey = "token"
+	TokenKey  = "token"
 )
 
 var (
@@ -28,7 +28,6 @@ func GetUserID(c *gin.Context) (string, error) {
 	return userID.(string), nil
 }
 
-
 func SetUser(c *gin.Context, user interface{}) {
 	c.Set(UserKey, user)
 }
@@ -40,7 +39,6 @@ func GetUser(c *gin.Context) (interface{}, error) {
 	}
 	return user, nil
 }
-
 
 func SetToken(c *gin.Context, token string) {
 	c.Set(TokenKey, token)
