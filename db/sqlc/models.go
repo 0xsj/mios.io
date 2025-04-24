@@ -31,6 +31,11 @@ type Auth struct {
 	ResetToken          *string    `json:"reset_token"`
 	ResetTokenExpiresAt *time.Time `json:"reset_token_expires_at"`
 	LastLogin           *time.Time `json:"last_login"`
+	RefreshToken        *string    `json:"refresh_token"`
+	FailedLoginAttempts *int32     `json:"failed_login_attempts"`
+	LockedUntil         *time.Time `json:"locked_until"`
+	CreatedAt           *time.Time `json:"created_at"`
+	UpdatedAt           *time.Time `json:"updated_at"`
 }
 
 type ContentItem struct {
