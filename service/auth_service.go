@@ -164,18 +164,26 @@ func (s *authService) Register(ctx context.Context, input RegisterInput) (*UserD
 }
 
 func (s *authService) Login(ctx context.Context, input LoginInput) (*TokenResponse, error) {
+	fmt.Println("Login service called with email:", input.Email)
 	user, err := s.userRepo.GetUserByEmail(ctx, input.Email)
+
 	if err != nil {
+		fmt.Printf("Error getting user by email: %v\n", err)
 		if errors.Is(err, repository.ErrRecordNotFound) {
 			return nil, api.ErrUnauthorized
 		}
 		return nil, api.ErrInternalServer
 	}
-
+	fmt.Printf("User found with ID: %s\n", user.UserID)
+    
 	auth, err := s.authRepo.GetAuthByUserID(ctx, user.UserID)
 	if err != nil {
+		fmt.Printf("Error in authRepo.GetAuthByUserID: %v\n", err)
 		return nil, api.ErrInternalServer
 	}
+
+	fmt.Printf("Auth found for user: %s, Salt length: %d\n", user.UserID, len(auth.Salt))
+    
 
 	if auth.LockedUntil != nil && time.Now().Before(*auth.LockedUntil) {
 		return nil, api.ErrForbidden

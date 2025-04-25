@@ -14,14 +14,27 @@ import (
 	"github.com/0xsj/gin-sqlc/config"
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
 	"github.com/0xsj/gin-sqlc/log"
+	"github.com/0xsj/gin-sqlc/pkg/password"
 	"github.com/0xsj/gin-sqlc/repository"
 	"github.com/0xsj/gin-sqlc/service"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+
+func testPasswordVerification() {
+    // Use the same values from your database
+    storedHash := "$2a$12$zS4uugKZD/axLQwjvSkGx.bIau3FX5UPox/digU9Quv9ujw9gpVDO"
+    storedSalt := "lNj+J85F8862k7icgRKChQ=="
+    plainPassword := "Password123!"
+    
+    err := password.VerifyPassword(plainPassword, storedHash, storedSalt)
+    fmt.Printf("Password verification result: %v\n", err)
+}
+
 func main() {
 	// Print startup message
+	testPasswordVerification()
 	fmt.Println("Starting application...")
 
 	logger := &log.EmptyLogger{}
