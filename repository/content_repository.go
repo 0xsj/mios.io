@@ -9,9 +9,10 @@ import (
 )
 
 type ContentRepository interface {
-	CreateContentItem(ctx context.Context, params CreateContentItemParams)(*db.ContentItem, error)
+	CreateContentItem(ctx context.Context, params CreateContentItemParams) (*db.ContentItem, error)
 	GetContentItem(ctx context.Context, itemID uuid.UUID) (*db.ContentItem, error)
-	UpdateContentItem(ctx context.Context,params UpdateContentItemParams)([]*db.ContentItem, error)
+	GetUserContentItems(ctx context.Context, userID uuid.UUID) ([]*db.ContentItem, error)
+	UpdateContentItem(ctx context.Context, params UpdateContentItemParams) error
 	UpdateContentItemPosition(ctx context.Context, params UpdatePositionParams) error
 	DeleteContentItem(ctx context.Context, itemID uuid.UUID) error
 }
@@ -71,10 +72,13 @@ func NewContentRepository(db *db.Queries) ContentRepository {
 }
 
 func (r *SQLContentRepository) CreateContentItem(ctx context.Context, params CreateContentItemParams)(*db.ContentItem, error){}
+
 func (r *SQLContentRepository) GetContentItem(ctx context.Context, itemID uuid.UUID) (*db.ContentItem, error) {}
 
+func (r *SQLContentRepository) GetUserContentItems(ctx context.Context, userID uuid.UUID)  ([]*db.ContentItem, error) {}
 
-func (r *SQLContentRepository) UpdateContentItem(ctx context.Context,params UpdateContentItemParams)([]*db.ContentItem, error){}
+
+func (r *SQLContentRepository) UpdateContentItem(ctx context.Context,params UpdateContentItemParams) error {}
 
 
 func (r *SQLContentRepository) UpdateContentItemPosition(ctx context.Context, params UpdatePositionParams) error {
