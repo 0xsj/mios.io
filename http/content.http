@@ -1,0 +1,69 @@
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### First, login to get the token
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "Password123!"
+}
+
+### Store tokens and IDs from login response
+@accessToken = {{login.response.body.data.access_token}}
+@userId = {{login.response.body.data.user.id}}
+
+### Create Content Item
+POST {{baseUrl}}/api/content
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "content_id": "content123",
+  "content_type": "link",
+  "title": "My Link",
+  "href": "https://example.com",
+  "desktop_x": 0,
+  "desktop_y": 0,
+  "desktop_style": "2x2",
+  "mobile_x": 0,
+  "mobile_y": 0,
+  "mobile_style": "1x1",
+  "halign": "center",
+  "valign": "middle",
+  "content_data": {},
+  "overrides": {}
+}
+
+### Get Content Item
+GET {{baseUrl}}/api/content/item123
+Authorization: Bearer {{accessToken}}
+
+### Get User Content Items
+GET {{baseUrl}}/api/content/user/{{userId}}
+
+### Update Content Item
+PUT {{baseUrl}}/api/content/item123
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "Updated Link",
+  "href": "https://example.com/updated"
+}
+
+### Update Content Item Position
+PATCH {{baseUrl}}/api/content/item123/position
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "desktop_x": 1,
+  "desktop_y": 1
+}
+
+### Delete Content Item
+DELETE {{baseUrl}}/api/content/item123
+Authorization: Bearer {{accessToken}}

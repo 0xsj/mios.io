@@ -1,0 +1,78 @@
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### Register User
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "username": "testuser",
+  "handle": "testuser",
+  "email": "test@example.com",
+  "password": "Password123!",
+  "first_name": "Test",
+  "last_name": "User",
+  "bio": "This is a test user account",
+  "profile_image_url": "https://via.placeholder.com/150",
+  "layout_version": "v1",
+  "custom_domain": ""
+}
+
+### Login
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "Password123!"
+}
+
+### Store the access token from the login response
+@accessToken = {{login.response.body.data.access_token}}
+@refreshToken = {{login.response.body.data.refresh_token}}
+@userId = {{login.response.body.data.user.id}}
+
+### Refresh Token
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: {{contentType}}
+
+{
+  "refresh_token": "{{refreshToken}}"
+}
+
+### Forgot Password
+POST {{baseUrl}}/api/auth/forgot-password
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com"
+}
+
+### Reset Password
+POST {{baseUrl}}/api/auth/reset-password
+Content-Type: {{contentType}}
+
+{
+  "token": "your-reset-token",
+  "email": "test@example.com",
+  "new_password": "NewPassword123!",
+  "confirm_password": "NewPassword123!"
+}
+
+### Verify Email
+POST {{baseUrl}}/api/auth/verify-email
+Content-Type: {{contentType}}
+
+{
+  "token": "your-verification-token"
+}
+
+### Logout
+POST {{baseUrl}}/api/auth/logout
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "user_id": "{{userId}}"
+}

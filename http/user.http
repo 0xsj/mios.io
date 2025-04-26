@@ -1,0 +1,63 @@
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### First, login to get the token
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "Password123!"
+}
+
+### Store tokens and IDs from login response
+@accessToken = {{login.response.body.data.access_token}}
+@userId = {{login.response.body.data.user.id}}
+
+### Get User by ID
+GET {{baseUrl}}/api/users/{{userId}}
+Authorization: Bearer {{accessToken}}
+
+### Get User by Username
+GET {{baseUrl}}/api/users/username/testuser
+
+### Get User by Handle
+GET {{baseUrl}}/api/users/handle/testuser
+
+### Get User by Email
+GET {{baseUrl}}/api/users/email/test@example.com
+Authorization: Bearer {{accessToken}}
+
+### Update User
+PUT {{baseUrl}}/api/users/{{userId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "first_name": "Updated",
+  "last_name": "User",
+  "bio": "This bio has been updated"
+}
+
+### Update Handle
+PATCH {{baseUrl}}/api/users/{{userId}}/handle
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "handle": "newhandle"
+}
+
+### Update Onboarded Status
+PATCH {{baseUrl}}/api/users/{{userId}}/onboarded
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "onboarded": true
+}
+
+### Delete User
+DELETE {{baseUrl}}/api/users/{{userId}}
+Authorization: Bearer {{accessToken}}
