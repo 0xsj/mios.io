@@ -1,6 +1,24 @@
 package service
 
-type ContentService interface {}
+import (
+	"context"
+
+	"github.com/0xsj/gin-sqlc/repository"
+)
+
+type ContentService interface {
+	CreateContentItem(ctx context.Context, input CreateContentItemInput) (*ContentItemDTO, error)
+	GetContentItem(ctx context.Context, itemID string) (*ContentItemDTO, error)
+	GetUserContentItems(ctx context.Context, userID string) ([]*ContentItemDTO, error)
+	UpdateContentItem(ctx context.Context, itemID string, input UpdateContentItemInput) (*ContentItemDTO, error)
+	UpdateContentItemPosition(ctx context.Context, itemID string, input UpdatePositionInput) (*ContentItemDTO, error)
+	DeleteContentItem(ctx context.Context, itemID string) error
+}
+
+type contentService struct {
+	contentRepo repository.ContentRepository
+	userRepo    repository.UserRepository
+}
 
 type CreateContentItemInput struct {
 	UserID      string                 `json:"user_id" binding:"required"`
@@ -78,3 +96,24 @@ type StyleDTO struct {
 	Desktop string `json:"desktop,omitempty"`
 	Mobile  string `json:"mobile,omitempty"`
 }
+
+func NewContentService(contentRepo repository.ContentRepository, userRepo repository.UserRepository) ContentService {
+	return &contentService{
+		contentRepo: contentRepo,
+		userRepo:    userRepo,
+	}
+}
+
+func (s *contentService) CreateContentItem(){}
+
+func (s *contentService) GetContentItem() {}
+
+func (s *contentService) GetUserContentItems() {}
+
+func (s *contentService) UpdateContentItem() {}
+
+func (s *contentService) UpdateContentItemPosition() {}
+
+func (s *contentService) DeleteContentItem() {}
+
+func mapContentItemToDTO() {}
