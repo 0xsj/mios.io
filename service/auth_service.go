@@ -28,6 +28,7 @@ type AuthService interface {
 	VerifyEmail(ctx context.Context, token string) error
 	Logout(ctx context.Context, userID string) error
 	ValidateToken(ctx context.Context, tokenStr string) (*token.Claims, error)
+	IsEmailVerified(ctx context.Context, userID string) (bool, error)
 }
 
 type RegisterInput struct {
@@ -401,5 +402,41 @@ func (s *authService) ValidateToken(ctx context.Context, tokenStr string) (*toke
 	if err != nil {
 		return nil, api.ErrUnauthorized
 	}
+
+	if claims.TokenType != token.AccessToken {
+		return nil, api.ErrUnauthorized
+	}
+
+	userID, err := uuid.Parse(claims.UserID)
+	if err != nil {
+		if errors.Is(err, repository.ErrRecordNotFound) {
+			return nil, api.ErrUnauthorized
+		}
+		return nil, api.ErrInternalServer
+	}
+
+	_, err = s.userRepo.GetUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, repository.ErrRecordNotFound) {
+			return nil, api.ErrUnauthorized
+		}
+
+		return nil, api.ErrInternalServer
+	}
+
 	return claims, nil
+}
+
+func (s *authService) IsEmailVerified(ctx context.Context, userIDStr string) (bool, error) {
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return false, api.ErrInvalidInput
+	}
+
+	auth, err := s.authRepo.GetAuthByUserID(ctx, userID)
+	if err != nil {
+		return false, api.ErrInternalServer
+	}
+
+	return auth.IsEmailVerified != nil && *auth.IsEmailVerified, nil
 }

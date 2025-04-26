@@ -7,9 +7,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	authapi "github.com/0xsj/gin-sqlc/api/auth"
+	"github.com/0xsj/gin-sqlc/api/content"
+	api "github.com/0xsj/gin-sqlc/api/server"
 	userapi "github.com/0xsj/gin-sqlc/api/user"
 	"github.com/0xsj/gin-sqlc/config"
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
@@ -17,13 +18,36 @@ import (
 	"github.com/0xsj/gin-sqlc/pkg/password"
 	"github.com/0xsj/gin-sqlc/repository"
 	"github.com/0xsj/gin-sqlc/service"
-	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+type mockContentService struct{}
+
+func (s *mockContentService) CreateContentItem(ctx context.Context, input service.CreateContentItemInput) (*service.ContentItemDTO, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *mockContentService) GetContentItem(ctx context.Context, itemID string) (*service.ContentItemDTO, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *mockContentService) GetUserContentItems(ctx context.Context, userID string) ([]*service.ContentItemDTO, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *mockContentService) UpdateContentItem(ctx context.Context, itemID string, input service.UpdateContentItemInput) (*service.ContentItemDTO, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *mockContentService) UpdateContentItemPosition(ctx context.Context, itemID string, input service.UpdatePositionInput) (*service.ContentItemDTO, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *mockContentService) DeleteContentItem(ctx context.Context, itemID string) error {
+	return fmt.Errorf("not implemented")
+}
 
 func testPasswordVerification() {
-    // Use the same values from your database
     storedHash := "$2a$12$zS4uugKZD/axLQwjvSkGx.bIau3FX5UPox/digU9Quv9ujw9gpVDO"
     storedSalt := "lNj+J85F8862k7icgRKChQ=="
     plainPassword := "Password123!"
@@ -33,29 +57,24 @@ func testPasswordVerification() {
 }
 
 func main() {
-	// Print startup message
 	testPasswordVerification()
 	fmt.Println("Starting application...")
 
 	logger := &log.EmptyLogger{}
 
-	// Load configuration and print debug info
 	fmt.Println("Loading configuration...")
 	cfg := config.LoadConfig("dev", ".")
 	fmt.Printf("Loaded configuration: %+v\n", cfg)
 
-	// Check for empty configuration values
 	if cfg.DBUsername == "" || cfg.DBPassword == "" || cfg.DBHost == "" || cfg.DBPort == "" || cfg.DBName == "" {
 		fmt.Println("ERROR: Database configuration values are missing")
 		os.Exit(1)
 	}
 
-	// Build database URL and print it for debugging
 	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		cfg.DBUsername, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName)
 	fmt.Printf("Database URL: %s\n", dbURL)
 
-	// Connect to database
 	fmt.Println("Connecting to database...")
 	dbpool, err := pgxpool.Connect(context.Background(), dbURL)
 	if err != nil {
@@ -63,7 +82,6 @@ func main() {
 		logger.Fatalf("Unable to connect to database: %v", err)
 	}
 
-	// Test database connection with ping
 	fmt.Println("Testing database connection with ping...")
 	err = dbpool.Ping(context.Background())
 	if err != nil {
@@ -74,50 +92,32 @@ func main() {
 
 	defer dbpool.Close()
 
-	// Initialize queries
 	fmt.Println("Initializing database queries...")
 	queries := db.New(dbpool)
 
-	// Initialize repository
-	fmt.Println("Initializing user repository...")
+	fmt.Println("Initializing repositories...")
 	userRepo := repository.NewUserRepository(queries)
 	authRepo := repository.NewAuthRepository(queries)
 
-	// Initialize service
-	fmt.Println("Initializing user service...")
+	fmt.Println("Initializing services...")
 	userService := service.NewUserService(userRepo)
 	authService := service.NewAuthService(userRepo, authRepo, cfg.JWTSecret, cfg.GetTokenDuration())
+	contentService := &mockContentService{} 
 
-	// Initialize handler
-	fmt.Println("Initializing user handler...")
+	fmt.Println("Initializing handlers...")
 	userHandler := userapi.NewHandler(userService)
 	authHandler := authapi.NewHandler(authService)
+	contentHandler := content.NewHandler(contentService)
 
-	// Setup router
-	fmt.Println("Setting up Gin router...")
-	router := gin.Default()
+	fmt.Println("Setting up server...")
+	server := api.NewServer(cfg, queries, logger)
+	
+	server.RegisterHandlers(userHandler, authHandler, contentHandler, authService)
 
-	// Register routes
-	fmt.Println("Registering API routes...")
-	userHandler.RegisterRoutes(router)
-	authHandler.RegisterRoutes(router)
-
-	// Print registered routes for debugging
-	for _, route := range router.Routes() {
-		fmt.Printf("Registered route: %s %s\n", route.Method, route.Path)
-	}
-
-	// Create HTTP server
-	server := &http.Server{
-		Addr:    fmt.Sprintf("%s:%s", cfg.Host, cfg.Port),
-		Handler: router,
-	}
-
-	// Start server
 	fmt.Printf("Starting HTTP server on %s:%s...\n", cfg.Host, cfg.Port)
 	go func() {
-		logger.Infof("Starting server on %s:%s", cfg.Host, cfg.Port)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
+		if err := server.Start(addr); err != nil && err != http.ErrServerClosed {
 			fmt.Printf("Server error: %v\n", err)
 			logger.Fatalf("Server error: %v", err)
 		}
@@ -130,13 +130,6 @@ func main() {
 	fmt.Println("Shutdown signal received...")
 	logger.Info("Shutting down server")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if err := server.Shutdown(ctx); err != nil {
-		fmt.Printf("Server shutdown error: %v\n", err)
-		logger.Fatalf("Server forced to shutdown: %v", err)
-	}
 
 	fmt.Println("Server successfully shut down")
 	logger.Info("Server exited properly")
