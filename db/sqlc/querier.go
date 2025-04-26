@@ -13,19 +13,25 @@ import (
 type Querier interface {
 	ClearResetToken(ctx context.Context, userID uuid.UUID) error
 	CreateAuth(ctx context.Context, arg CreateAuthParams) error
+	CreateContentItem(ctx context.Context, arg CreateContentItemParams) (*ContentItem, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (*User, error)
+	DeleteContentItem(ctx context.Context, itemID uuid.UUID) error
 	DeleteUser(ctx context.Context, userID uuid.UUID) error
 	GetAuthByUserID(ctx context.Context, userID uuid.UUID) (*Auth, error)
+	GetContentItem(ctx context.Context, itemID uuid.UUID) (*ContentItem, error)
 	GetUser(ctx context.Context, userID uuid.UUID) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByHandle(ctx context.Context, handle string) (*User, error)
 	GetUserByUsername(ctx context.Context, username string) (*User, error)
+	GetUserContentItems(ctx context.Context, userID uuid.UUID) ([]*ContentItem, error)
 	IncrementFailedLoginAttempts(ctx context.Context, userID uuid.UUID) error
 	InvalidateRefreshToken(ctx context.Context, userID uuid.UUID) error
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]*User, error)
 	SetAccountLockout(ctx context.Context, arg SetAccountLockoutParams) error
 	SetResetToken(ctx context.Context, arg SetResetTokenParams) error
 	StoreRefreshToken(ctx context.Context, arg StoreRefreshTokenParams) error
+	UpdateContentItem(ctx context.Context, arg UpdateContentItemParams) error
+	UpdateContentItemPosition(ctx context.Context, arg UpdateContentItemPositionParams) error
 	UpdateEmail(ctx context.Context, arg UpdateEmailParams) error
 	UpdateHandle(ctx context.Context, arg UpdateHandleParams) error
 	UpdateLastLogin(ctx context.Context, userID uuid.UUID) error

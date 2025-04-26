@@ -1,0 +1,34 @@
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### First, login as an admin user
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "admin@example.com",
+  "password": "AdminPassword123!"
+}
+
+### Store tokens and IDs from login response
+@accessToken = {{login.response.body.data.access_token}}
+@targetUserId = "user-id-to-modify" 
+
+### Update Premium Status (Admin only)
+PATCH {{baseUrl}}/api/admin/users/{{targetUserId}}/premium
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "is_premium": true
+}
+
+### Update Admin Status (Admin only)
+PATCH {{baseUrl}}/api/admin/users/{{targetUserId}}/admin
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "is_admin": true
+}
