@@ -21,6 +21,7 @@ Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
 {
+  "user_id": "444686e7-9c3b-43fa-871a-077b0f145473",
   "content_id": "content123",
   "content_type": "link",
   "title": "My Link",
@@ -38,7 +39,7 @@ Authorization: Bearer {{accessToken}}
 }
 
 ### Get Content Item
-GET {{baseUrl}}/api/content/item123
+GET {{baseUrl}}/api/content/content123
 Authorization: Bearer {{accessToken}}
 
 ### Get User Content Items

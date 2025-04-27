@@ -44,14 +44,11 @@ func (s *Server) RegisterHandlers(
 	contentHandler *content.Handler,
 	authService service.AuthService,
 ) {
-	// Create middleware instances
 	authMiddleware := middleware.AuthMiddleware(authService)
 	adminMiddleware := middleware.AdminMiddleware()
 	
-	// Public routes
 	publicRoutes := s.router.Group("/api")
 	{
-		// Auth routes
 		authGroup := publicRoutes.Group("/auth")
 		{
 			authGroup.POST("/register", authHandler.Register)
@@ -62,31 +59,26 @@ func (s *Server) RegisterHandlers(
 			authGroup.POST("/verify-email", authHandler.VerifyEmail)
 		}
 		
-		// Public user routes
 		publicUserGroup := publicRoutes.Group("/users")
 		{
 			publicUserGroup.GET("/username/:username", userHandler.GetUserByUsername)
 			publicUserGroup.GET("/handle/:handle", userHandler.GetUserbyHandle)
 		}
 		
-		// Public content routes (for viewing only)
 		publicContentGroup := publicRoutes.Group("/content")
 		{
 			publicContentGroup.GET("/user/:user_id", contentHandler.GetUserContentItems)
 		}
 	}
 	
-	// Protected routes (authentication required)
 	protectedRoutes := s.router.Group("/api")
 	protectedRoutes.Use(authMiddleware)
 	{
-		// Auth routes that require authentication
 		authGroup := protectedRoutes.Group("/auth")
 		{
 			authGroup.POST("/logout", authHandler.Logout)
 		}
 		
-		// User routes that require authentication
 		userGroup := protectedRoutes.Group("/users")
 		{
 			userGroup.GET("/:id", userHandler.GetUser)
@@ -96,7 +88,6 @@ func (s *Server) RegisterHandlers(
 			userGroup.DELETE("/:id", userHandler.DeleteUser)
 		}
 		
-		// Content routes that require authentication
 		contentGroup := protectedRoutes.Group("/content")
 		{
 			contentGroup.POST("", contentHandler.CreateContentItem)
@@ -116,7 +107,6 @@ func (s *Server) RegisterHandlers(
 		
 	}
 	
-	// Health check route
 	s.router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",

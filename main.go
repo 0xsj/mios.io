@@ -21,31 +21,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-type mockContentService struct{}
 
-func (s *mockContentService) CreateContentItem(ctx context.Context, input service.CreateContentItemInput) (*service.ContentItemDTO, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (s *mockContentService) GetContentItem(ctx context.Context, itemID string) (*service.ContentItemDTO, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (s *mockContentService) GetUserContentItems(ctx context.Context, userID string) ([]*service.ContentItemDTO, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (s *mockContentService) UpdateContentItem(ctx context.Context, itemID string, input service.UpdateContentItemInput) (*service.ContentItemDTO, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (s *mockContentService) UpdateContentItemPosition(ctx context.Context, itemID string, input service.UpdatePositionInput) (*service.ContentItemDTO, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (s *mockContentService) DeleteContentItem(ctx context.Context, itemID string) error {
-	return fmt.Errorf("not implemented")
-}
 
 func testPasswordVerification() {
     storedHash := "$2a$12$zS4uugKZD/axLQwjvSkGx.bIau3FX5UPox/digU9Quv9ujw9gpVDO"
@@ -98,11 +74,12 @@ func main() {
 	fmt.Println("Initializing repositories...")
 	userRepo := repository.NewUserRepository(queries)
 	authRepo := repository.NewAuthRepository(queries)
+	contentRepo := repository.NewContentRepository(queries)
 
 	fmt.Println("Initializing services...")
 	userService := service.NewUserService(userRepo)
 	authService := service.NewAuthService(userRepo, authRepo, cfg.JWTSecret, cfg.GetTokenDuration())
-	contentService := &mockContentService{} 
+	contentService := service.NewContentService(contentRepo, userRepo)
 
 	fmt.Println("Initializing handlers...")
 	userHandler := userapi.NewHandler(userService)

@@ -235,28 +235,27 @@ func (s *contentService) UpdateContentItem(ctx context.Context, itemIDStr string
         return nil, api.ErrInternalServer
     }
 
-    // Prepare the update parameters
     var contentData, overrides *pgtype.JSONB
     
-    if input.ContentData != nil && len(input.ContentData) > 0 {
-        var cData pgtype.JSONB
-        cData.Status = pgtype.Present
-        cData.Bytes, err = json.Marshal(input.ContentData)
-        if err != nil {
-            return nil, api.ErrInvalidInput
-        }
-        contentData = &cData
-    }
-
-    if input.Overrides != nil && len(input.Overrides) > 0 {
-        var oData pgtype.JSONB
-        oData.Status = pgtype.Present
-        oData.Bytes, err = json.Marshal(input.Overrides)
-        if err != nil {
-            return nil, api.ErrInvalidInput
-        }
-        overrides = &oData
-    }
+    if len(input.ContentData) > 0 {
+		var cData pgtype.JSONB
+		cData.Status = pgtype.Present
+		cData.Bytes, err = json.Marshal(input.ContentData)
+		if err != nil {
+			return nil, api.ErrInvalidInput
+		}
+		contentData = &cData
+	}
+	
+    if len(input.Overrides) > 0 {
+		var oData pgtype.JSONB
+		oData.Status = pgtype.Present
+		oData.Bytes, err = json.Marshal(input.Overrides)
+		if err != nil {
+			return nil, api.ErrInvalidInput
+		}
+		overrides = &oData
+	}
 
     params := repository.UpdateContentItemParams{
         ItemID:       itemID,
@@ -422,7 +421,6 @@ func mapContentItemToDTO(item *db.ContentItem) *ContentItemDTO {
 		}
 	}
 
-	// Convert JSONB to map
 	if item.ContentData.Status == pgtype.Present {
 		var contentData map[string]interface{}
 		if err := json.Unmarshal(item.ContentData.Bytes, &contentData); err == nil {
