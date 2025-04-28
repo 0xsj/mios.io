@@ -107,3 +107,42 @@ type VisitorAnalytics struct {
 type SQLCAnalyticsRepository struct {
 	db *db.Queries
 }
+
+func NewAnalyticsRepository(db *db.Queries) AnalyticsRepository {
+	return &SQLCAnalyticsRepository{
+		db: db,
+	}
+}
+
+func (r *SQLCAnalyticsRepository) CreateAnalyticsEntry(ctx context.Context, params CreateAnalyticsParams) (*db.Analytic, error) {
+	ipAddressPtr := &params.IPAddress
+	userAgentPtr := &params.UserAgent
+	referrerPtr := &params.Referrer
+
+	if params.IPAddress == "" {
+		ipAddressPtr = nil
+	}
+
+	if params.UserAgent == "" {
+		userAgentPtr = nil
+	}
+
+	if params.Referrer == "" {
+		referrerPtr = nil
+	}
+
+
+	sqlcParams := db.CreateAnalyticsEntryParams{
+		ItemID: params.ItemID,
+		UserID: params.UserID,
+		IpAddress: ipAddressPtr,
+		UserAgent: userAgentPtr,
+		Referrer: referrerPtr,
+	}
+	entry, err := r.db.CreateAnalyticsEntry(ctx, sqlcParams)
+	if err != nil {
+		return nil, ErrDatabase
+	}
+	
+	return entry, nil
+}
