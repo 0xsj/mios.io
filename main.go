@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/0xsj/gin-sqlc/api/analytics"
 	authapi "github.com/0xsj/gin-sqlc/api/auth"
 	"github.com/0xsj/gin-sqlc/api/content"
 	api "github.com/0xsj/gin-sqlc/api/server"
@@ -75,21 +76,25 @@ func main() {
 	userRepo := repository.NewUserRepository(queries)
 	authRepo := repository.NewAuthRepository(queries)
 	contentRepo := repository.NewContentRepository(queries)
+	analyticsRepo := repository.NewAnalyticsRepository(queries)
 
 	fmt.Println("Initializing services...")
 	userService := service.NewUserService(userRepo)
 	authService := service.NewAuthService(userRepo, authRepo, cfg.JWTSecret, cfg.GetTokenDuration())
 	contentService := service.NewContentService(contentRepo, userRepo)
+	analyticsService := service.NewAnalyticsService(analyticsRepo, contentRepo, userRepo)
+	
 
 	fmt.Println("Initializing handlers...")
 	userHandler := userapi.NewHandler(userService)
 	authHandler := authapi.NewHandler(authService)
 	contentHandler := content.NewHandler(contentService)
+	analyticsHandler := analytics.NewHandler(analyticsService)
 
 	fmt.Println("Setting up server...")
 	server := api.NewServer(cfg, queries, logger)
 	
-	server.RegisterHandlers(userHandler, authHandler, contentHandler, authService)
+	server.RegisterHandlers(userHandler, authHandler, contentHandler, authService, analyticsHandler)
 
 	fmt.Printf("Starting HTTP server on %s:%s...\n", cfg.Host, cfg.Port)
 	go func() {
