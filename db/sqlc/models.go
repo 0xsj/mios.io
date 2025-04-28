@@ -19,6 +19,7 @@ type Analytic struct {
 	UserAgent   *string    `json:"user_agent"`
 	Referrer    *string    `json:"referrer"`
 	ClickedAt   *time.Time `json:"clicked_at"`
+	PageView    *bool      `json:"page_view"`
 }
 
 type Auth struct {

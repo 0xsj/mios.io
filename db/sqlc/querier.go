@@ -12,18 +12,39 @@ import (
 
 type Querier interface {
 	ClearResetToken(ctx context.Context, userID uuid.UUID) error
+	// db/query/analytics.sql
+	// Recording clicks and page views
+	CreateAnalyticsEntry(ctx context.Context, arg CreateAnalyticsEntryParams) (*Analytic, error)
 	CreateAuth(ctx context.Context, arg CreateAuthParams) error
 	CreateContentItem(ctx context.Context, arg CreateContentItemParams) (*ContentItem, error)
+	CreatePageViewEntry(ctx context.Context, arg CreatePageViewEntryParams) (*Analytic, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (*User, error)
 	DeleteContentItem(ctx context.Context, itemID uuid.UUID) error
 	DeleteUser(ctx context.Context, userID uuid.UUID) error
 	GetAuthByUserID(ctx context.Context, userID uuid.UUID) (*Auth, error)
 	GetContentItem(ctx context.Context, itemID uuid.UUID) (*ContentItem, error)
+	// Count queries
+	GetContentItemClickCount(ctx context.Context, itemID uuid.UUID) (int64, error)
+	// Basic analytics queries
+	GetItemAnalytics(ctx context.Context, arg GetItemAnalyticsParams) ([]*Analytic, error)
+	GetItemAnalyticsByTimeRange(ctx context.Context, arg GetItemAnalyticsByTimeRangeParams) ([]*GetItemAnalyticsByTimeRangeRow, error)
+	GetProfilePageViews(ctx context.Context, userID uuid.UUID) (int64, error)
+	GetProfilePageViewsByDate(ctx context.Context, arg GetProfilePageViewsByDateParams) ([]*GetProfilePageViewsByDateRow, error)
+	GetReferrerAnalytics(ctx context.Context, arg GetReferrerAnalyticsParams) ([]*GetReferrerAnalyticsRow, error)
+	// Insight queries
+	GetTopContentItemsByClicks(ctx context.Context, arg GetTopContentItemsByClicksParams) ([]*GetTopContentItemsByClicksRow, error)
+	// Visitor analytics
+	GetUniqueVisitors(ctx context.Context, arg GetUniqueVisitorsParams) (int64, error)
+	GetUniqueVisitorsByDay(ctx context.Context, arg GetUniqueVisitorsByDayParams) ([]*GetUniqueVisitorsByDayRow, error)
 	GetUser(ctx context.Context, userID uuid.UUID) (*User, error)
+	GetUserAnalytics(ctx context.Context, arg GetUserAnalyticsParams) ([]*Analytic, error)
+	// Time range analytics
+	GetUserAnalyticsByTimeRange(ctx context.Context, arg GetUserAnalyticsByTimeRangeParams) ([]*GetUserAnalyticsByTimeRangeRow, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByHandle(ctx context.Context, handle string) (*User, error)
 	GetUserByUsername(ctx context.Context, username string) (*User, error)
 	GetUserContentItems(ctx context.Context, userID uuid.UUID) ([]*ContentItem, error)
+	GetUserItemClickCount(ctx context.Context, userID uuid.UUID) (int64, error)
 	IncrementFailedLoginAttempts(ctx context.Context, userID uuid.UUID) error
 	InvalidateRefreshToken(ctx context.Context, userID uuid.UUID) error
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]*User, error)
