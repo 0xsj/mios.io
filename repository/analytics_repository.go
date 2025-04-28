@@ -242,7 +242,7 @@ func (r *SQLCAnalyticsRepository) GetProfilePageViewsByDate(ctx context.Context,
     for i, row := range rows {
         result[i] = DailyAnalytics{
             Day:    row.Day,
-            Clicks: row.Views, // Repurposing 'Clicks' field for views
+            Clicks: row.Views,
         }
     }
     
@@ -368,7 +368,6 @@ func (r *SQLCAnalyticsRepository) GetUserAnalytics(ctx context.Context, userID u
 }
 
 
-// GetContentItemClickCount implements AnalyticsRepository.
 func (r *SQLCAnalyticsRepository) GetContentItemClickCount(ctx context.Context, itemID uuid.UUID) (int64, error) {
     count, err := r.db.GetContentItemClickCount(ctx, itemID)
     if err != nil {
@@ -378,7 +377,6 @@ func (r *SQLCAnalyticsRepository) GetContentItemClickCount(ctx context.Context, 
     return count, nil
 }
 
-// GetProfilePageViews implements AnalyticsRepository.
 func (r *SQLCAnalyticsRepository) GetProfilePageViews(ctx context.Context, userID uuid.UUID) (int64, error) {
     count, err := r.db.GetProfilePageViews(ctx, userID)
     if err != nil {
@@ -388,7 +386,6 @@ func (r *SQLCAnalyticsRepository) GetProfilePageViews(ctx context.Context, userI
     return count, nil
 }
 
-// GetUserItemClickCount implements AnalyticsRepository.
 func (r *SQLCAnalyticsRepository) GetUserItemClickCount(ctx context.Context, userID uuid.UUID) (int64, error) {
     count, err := r.db.GetUserItemClickCount(ctx, userID)
     if err != nil {

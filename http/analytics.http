@@ -1,0 +1,102 @@
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### First, login to get the token
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "Password123!"
+}
+
+### Store tokens and IDs from login response
+@accessToken = {{login.response.body.data.access_token}}
+@userId = {{login.response.body.data.user.id}}
+
+### Record a click
+POST {{baseUrl}}/api/analytics/clicks
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "item_id": "item-uuid-here",
+  "user_id": "{{userId}}",
+  "ip_address": "127.0.0.1",
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  "referrer": "https://google.com"
+}
+
+### Record a page view
+POST {{baseUrl}}/api/analytics/page-views
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "profile_id": "profile-uuid-here",
+  "user_id": "{{userId}}",
+  "ip_address": "127.0.0.1",
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  "referrer": "https://google.com"
+}
+
+### Get content item analytics
+GET {{baseUrl}}/api/analytics/items/item-uuid-here?page=1&page_size=10
+Authorization: Bearer {{accessToken}}
+
+### Get content item analytics by time range
+POST {{baseUrl}}/api/analytics/items/item-uuid-here/time-range
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "start_date": "2025-01-01T00:00:00Z",
+  "end_date": "2025-04-28T23:59:59Z",
+  "limit": 10
+}
+
+### Get user analytics
+GET {{baseUrl}}/api/analytics/users/{{userId}}?page=1&page_size=10
+Authorization: Bearer {{accessToken}}
+
+### Get user analytics by time range
+POST {{baseUrl}}/api/analytics/users/{{userId}}/time-range
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "start_date": "2025-01-01T00:00:00Z",
+  "end_date": "2025-04-28T23:59:59Z",
+  "limit": 10
+}
+
+### Get user page views by time range
+POST {{baseUrl}}/api/analytics/users/{{userId}}/page-views
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "start_date": "2025-01-01T00:00:00Z",
+  "end_date": "2025-04-28T23:59:59Z",
+  "limit": 10
+}
+
+### Get user profile dashboard (last 30 days by default)
+GET {{baseUrl}}/api/analytics/users/{{userId}}/dashboard
+Authorization: Bearer {{accessToken}}
+
+### Get user profile dashboard for the last 7 days
+GET {{baseUrl}}/api/analytics/users/{{userId}}/dashboard?days=7
+Authorization: Bearer {{accessToken}}
+
+### Get referrer analytics
+POST {{baseUrl}}/api/analytics/users/{{userId}}/referrers
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "start_date": "2025-01-01T00:00:00Z",
+  "end_date": "2025-04-28T23:59:59Z",
+  "limit": 5
+}

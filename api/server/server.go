@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/0xsj/gin-sqlc/api/analytics"
 	"github.com/0xsj/gin-sqlc/api/auth"
 	"github.com/0xsj/gin-sqlc/api/content"
 	"github.com/0xsj/gin-sqlc/api/user"
@@ -43,6 +44,8 @@ func (s *Server) RegisterHandlers(
 	authHandler *auth.Handler,
 	contentHandler *content.Handler,
 	authService service.AuthService,
+	analyticsHandler *analytics.Handler,
+
 ) {
 	authMiddleware := middleware.AuthMiddleware(authService)
 	adminMiddleware := middleware.AdminMiddleware()
@@ -95,6 +98,19 @@ func (s *Server) RegisterHandlers(
 			contentGroup.PUT("/:id", contentHandler.UpdateContentItem)
 			contentGroup.PATCH("/:id/position", contentHandler.UpdateContentItemPosition)
 			contentGroup.DELETE("/:id", contentHandler.DeleteContentItem)
+		}
+
+		analyticsGroup := protectedRoutes.Group("/analytics")
+		{
+			analyticsGroup.POST("/clicks", analyticsHandler.RecordClick)
+			analyticsGroup.POST("/page-views", analyticsHandler.RecordPageView)
+			analyticsGroup.GET("/items/:id", analyticsHandler.GetContentItemAnalytics)
+			analyticsGroup.POST("/items/:id/time-range", analyticsHandler.GetItemAnalyticsByTimeRange)
+			analyticsGroup.GET("/users/:id", analyticsHandler.GetUserAnalytics)
+			analyticsGroup.POST("/users/:id/time-range", analyticsHandler.GetUserAnalyticsByTimeRange)
+			analyticsGroup.POST("/users/:id/page-views", analyticsHandler.GetProfilePageViewsByTimeRange)
+			analyticsGroup.GET("/users/:id/dashboard", analyticsHandler.GetProfileDashboard)
+			analyticsGroup.POST("/users/:id/referrers", analyticsHandler.GetReferrerAnalytics)
 		}
 	}
 	
