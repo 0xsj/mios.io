@@ -131,8 +131,8 @@ func NewExternalServiceError(message string, err error) *AppError {
 	}
 }
 
-// WrapError adds context to an existing error
-func WrapError(err error, message string) error {
+// Wrap adds context to an existing error
+func Wrap(err error, message string) error {
 	if err == nil {
 		return nil
 	}
@@ -152,6 +152,20 @@ func WrapError(err error, message string) error {
 		Message: message,
 		Code:    "INTERNAL_SERVER_ERROR",
 		Status:  http.StatusInternalServerError,
+	}
+}
+
+// WrapWith wraps an error with a specific error type
+func WrapWith(err error, message string, errType *AppError) error {
+	if err == nil {
+		return nil
+	}
+	
+	return &AppError{
+		Err:     err,
+		Message: message,
+		Code:    errType.Code,
+		Status:  errType.Status,
 	}
 }
 

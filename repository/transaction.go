@@ -8,6 +8,10 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
+type contextKey string
+
+const txContextKey contextKey = "transaction"
+
 type TxManager interface {
 	WithTransaction(ctx context.Context, fn func(ctx context.Context) error) error
 }
@@ -28,26 +32,27 @@ func (m *PgxTxManager) WithTransaction(ctx context.Context, fn func(context.Cont
 	
 	defer func() {
 		if p := recover(); p != nil {
-			// Rollback on panic
 			_ = tx.Rollback(ctx)
-			panic(p) // Re-throw panic
+			panic(p) 
 		}
 	}()
 	
-	txCtx := context.WithValue(ctx, "tx", tx)
+	txCtx := context.WithValue(ctx, txContextKey, tx)
 	
 	if err := fn(txCtx); err != nil {
-		// Rollback on error
 		if rbErr := tx.Rollback(ctx); rbErr != nil {
 			return errors.Wrap(rbErr, "rollback failed: "+err.Error())
 		}
 		return err
 	}
-	
-	// Commit transaction
 	if err := tx.Commit(ctx); err != nil {
 		return errors.Wrap(err, "failed to commit transaction")
 	}
 	
 	return nil
+}
+
+func GetTxFromContext(ctx context.Context) (pgx.Tx, bool) {
+	tx, ok := ctx.Value(txContextKey).(pgx.Tx)
+	return tx, ok
 }
