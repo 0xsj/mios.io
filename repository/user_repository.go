@@ -109,19 +109,38 @@ func (r *SQLCUserRepository) CreateUser(ctx context.Context, arg CreateUserParam
 }
 
 func (r *SQLCUserRepository) GetUser(ctx context.Context, userID uuid.UUID) (*db.User, error) {
-	user, err := r.db.GetUser(ctx, userID)
-	if err != nil {
-		return nil, apperror.HandleDBError(err, "user")
-	}
-	return user, nil
+    r.logger.Debugf("Getting user with ID: %s", userID)
+    
+    start := time.Now()
+    user, err := r.db.GetUser(ctx, userID)
+    duration := time.Since(start)
+    
+    if err != nil {
+        appErr := apperror.HandleDBError(err, "user")
+        appErr.Log(r.logger)
+        return nil, appErr
+    }
+    
+    r.logger.Debugf("Retrieved user with ID: %s in %v", userID, duration)
+    return user, nil
 }
 
+
 func (r *SQLCUserRepository) GetUserByUsername(ctx context.Context, username string) (*db.User, error) {
-	user, err := r.db.GetUserByUsername(ctx, username)
-	if err != nil {
-		return nil, apperror.HandleDBError(err, "user")
-	}
-	return user, nil
+    r.logger.Debugf("Getting user by username: %s", username)
+    
+    start := time.Now()
+    user, err := r.db.GetUserByUsername(ctx, username)
+    duration := time.Since(start)
+    
+    if err != nil {
+        appErr := apperror.HandleDBError(err, "user")
+        appErr.Log(r.logger)
+        return nil, appErr
+    }
+    
+    r.logger.Debugf("Retrieved user by username: %s in %v", username, duration)
+    return user, nil
 }
 
 func (r *SQLCUserRepository) GetUserByHandle(ctx context.Context, handle string) (*db.User, error) {
