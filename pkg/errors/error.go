@@ -5,9 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/0xsj/gin-sqlc/log"
 )
 
-// Standard error types
 var (
 	ErrInvalidInput     = errors.New("invalid input")
 	ErrUnauthorized     = errors.New("unauthorized")
@@ -20,15 +21,24 @@ var (
 	ErrExternalService  = errors.New("external service error")
 )
 
-// AppError extends the standard error with additional context
+type LogLevel int
+
+const (
+	LogLevelDebug LogLevel = iota
+	LogLevelInfo
+	LogLevelWarn
+	LogLevelError
+	LogLevelFatal
+)
+
 type AppError struct {
-	Err     error  // Original error
-	Message string // User-friendly message
-	Code    string // Error code
-	Status  int    // HTTP status code
+	Err      error
+	Message  string
+	Code     string
+	Status   int
+	LogLevel LogLevel
 }
 
-// Error returns the error message
 func (e *AppError) Error() string {
 	if e.Err != nil {
 		return fmt.Sprintf("%s: %v", e.Message, e.Err)
@@ -36,12 +46,10 @@ func (e *AppError) Error() string {
 	return e.Message
 }
 
-// Unwrap returns the wrapped error
 func (e *AppError) Unwrap() error {
 	return e.Err
 }
 
-// Is reports whether target is in the error chain
 func (e *AppError) Is(target error) bool {
 	if e.Err == nil {
 		return false
@@ -49,95 +57,125 @@ func (e *AppError) Is(target error) bool {
 	return errors.Is(e.Err, target)
 }
 
-// Helper functions to create specific error types
+func (e *AppError) Log(logger log.Logger) {
+	errMsg := fmt.Sprintf("Error: %s (Code: %s, Status: %d)",
+		e.Message, e.Code, e.Status)
+
+	if e.Err != nil {
+		errMsg = fmt.Sprintf("%s, Cause: %v", errMsg, e.Err)
+	}
+
+	switch e.LogLevel {
+	case LogLevelDebug:
+		logger.Debug(errMsg)
+	case LogLevelInfo:
+		logger.Info(errMsg)
+	case LogLevelWarn:
+		logger.Warn(errMsg)
+	case LogLevelError:
+		logger.Error(errMsg)
+	case LogLevelFatal:
+		logger.Fatal(errMsg)
+	default:
+		logger.Error(errMsg)
+	}
+}
+
 func NewBadRequestError(message string, err error) *AppError {
 	return &AppError{
-		Err:     err,
-		Message: message,
-		Code:    "BAD_REQUEST",
-		Status:  http.StatusBadRequest,
+		Err:      err,
+		Message:  message,
+		Code:     "BAD_REQUEST",
+		Status:   http.StatusBadRequest,
+		LogLevel: LogLevelWarn,
 	}
 }
 
 func NewUnauthorizedError(message string, err error) *AppError {
 	return &AppError{
-		Err:     err,
-		Message: message,
-		Code:    "UNAUTHORIZED",
-		Status:  http.StatusUnauthorized,
+		Err:      err,
+		Message:  message,
+		Code:     "UNAUTHORIZED",
+		Status:   http.StatusUnauthorized,
+		LogLevel: LogLevelWarn,
 	}
 }
 
 func NewForbiddenError(message string, err error) *AppError {
 	return &AppError{
-		Err:     err,
-		Message: message,
-		Code:    "FORBIDDEN",
-		Status:  http.StatusForbidden,
+		Err:      err,
+		Message:  message,
+		Code:     "FORBIDDEN",
+		Status:   http.StatusForbidden,
+		LogLevel: LogLevelWarn,
 	}
 }
 
 func NewNotFoundError(message string, err error) *AppError {
 	return &AppError{
-		Err:     err,
-		Message: message,
-		Code:    "NOT_FOUND",
-		Status:  http.StatusNotFound,
+		Err:      err,
+		Message:  message,
+		Code:     "NOT_FOUND",
+		Status:   http.StatusNotFound,
+		LogLevel: LogLevelInfo,
 	}
 }
 
 func NewConflictError(message string, err error) *AppError {
 	return &AppError{
-		Err:     err,
-		Message: message,
-		Code:    "CONFLICT",
-		Status:  http.StatusConflict,
+		Err:      err,
+		Message:  message,
+		Code:     "CONFLICT",
+		Status:   http.StatusConflict,
+		LogLevel: LogLevelWarn,
 	}
 }
 
 func NewInternalError(message string, err error) *AppError {
 	return &AppError{
-		Err:     err,
-		Message: message,
-		Code:    "INTERNAL_SERVER_ERROR",
-		Status:  http.StatusInternalServerError,
+		Err:      err,
+		Message:  message,
+		Code:     "INTERNAL_SERVER_ERROR",
+		Status:   http.StatusInternalServerError,
+		LogLevel: LogLevelError,
 	}
 }
 
 func NewValidationError(message string, err error) *AppError {
 	return &AppError{
-		Err:     err,
-		Message: message,
-		Code:    "VALIDATION_ERROR",
-		Status:  http.StatusBadRequest,
+		Err:      err,
+		Message:  message,
+		Code:     "VALIDATION_ERROR",
+		Status:   http.StatusBadRequest,
+		LogLevel: LogLevelInfo,
 	}
 }
 
 func NewDatabaseError(message string, err error) *AppError {
 	return &AppError{
-		Err:     err,
-		Message: message,
-		Code:    "DATABASE_ERROR",
-		Status:  http.StatusInternalServerError,
+		Err:      err,
+		Message:  message,
+		Code:     "DATABASE_ERROR",
+		Status:   http.StatusInternalServerError,
+		LogLevel: LogLevelError,
 	}
 }
 
 func NewExternalServiceError(message string, err error) *AppError {
 	return &AppError{
-		Err:     err,
-		Message: message,
-		Code:    "EXTERNAL_SERVICE_ERROR",
-		Status:  http.StatusInternalServerError,
+		Err:      err,
+		Message:  message,
+		Code:     "EXTERNAL_SERVICE_ERROR",
+		Status:   http.StatusInternalServerError,
+		LogLevel: LogLevelError,
 	}
 }
 
-// Wrap adds context to an existing error
 func Wrap(err error, message string) error {
 	if err == nil {
 		return nil
 	}
-	
-	// If it's already an AppError, just update the message
+
 	var appErr *AppError
 	if errors.As(err, &appErr) {
 		if message != "" {
@@ -145,43 +183,41 @@ func Wrap(err error, message string) error {
 		}
 		return appErr
 	}
-	
-	// Otherwise wrap it as an internal error
+
 	return &AppError{
-		Err:     err,
-		Message: message,
-		Code:    "INTERNAL_SERVER_ERROR",
-		Status:  http.StatusInternalServerError,
+		Err:      err,
+		Message:  message,
+		Code:     "INTERNAL_SERVER_ERROR",
+		Status:   http.StatusInternalServerError,
+		LogLevel: LogLevelError,
 	}
 }
 
-// WrapWith wraps an error with a specific error type
 func WrapWith(err error, message string, errType *AppError) error {
 	if err == nil {
 		return nil
 	}
-	
+
 	return &AppError{
-		Err:     err,
-		Message: message,
-		Code:    errType.Code,
-		Status:  errType.Status,
+		Err:      err,
+		Message:  message,
+		Code:     errType.Code,
+		Status:   errType.Status,
+		LogLevel: errType.LogLevel,
 	}
 }
 
-// PostgreSQL error codes
 const (
-	PgErrUniqueViolation      = "23505"
-	PgErrForeignKeyViolation  = "23503"
-	PgErrCheckViolation       = "23514"
+	PgErrUniqueViolation     = "23505"
+	PgErrForeignKeyViolation = "23503"
+	PgErrCheckViolation      = "23514"
 )
 
-// IsPgError checks if an error is a PostgreSQL error with a specific code
 func IsPgError(err error, code string) bool {
 	pgErr, ok := err.(interface {
 		Code() string
 	})
-	
+
 	if ok && pgErr.Code() == code {
 		return true
 	}

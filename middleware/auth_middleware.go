@@ -41,7 +41,6 @@ func AuthMiddleware(authService service.AuthService) gin.HandlerFunc {
 	}
 }
 
-
 func AdminMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		claimsValue, exists := c.Get("claims")
@@ -92,8 +91,8 @@ func RequireVerifiedEmail(authService service.AuthService) gin.HandlerFunc {
 		verified, err := authService.IsEmailVerified(c, userID)
 		if err != nil || !verified {
 			api.RespondWithError(c, api.ErrorResponse{
-				Status: 403,
-				Code: "EMAIL_NOT_VERIFIED",
+				Status:  403,
+				Code:    "EMAIL_NOT_VERIFIED",
 				Message: "email verification is required for this action",
 			})
 			c.Abort()
@@ -102,5 +101,3 @@ func RequireVerifiedEmail(authService service.AuthService) gin.HandlerFunc {
 		c.Next()
 	}
 }
-
-

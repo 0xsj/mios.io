@@ -137,7 +137,7 @@ func WrapError(err error, message string) error {
 	if err == nil {
 		return nil
 	}
-	
+
 	var appErr *AppError
 	if errors.As(err, &appErr) {
 		if message != "" {
@@ -145,7 +145,7 @@ func WrapError(err error, message string) error {
 		}
 		return appErr
 	}
-	
+
 	// Otherwise wrap it as an internal error
 	return NewInternalError(message, err)
 }

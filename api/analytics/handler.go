@@ -12,7 +12,7 @@ type Handler struct {
 	analyticsService service.AnalyticsService
 }
 
-func NewHandler(analyticsService service.AnalyticsService) *Handler{
+func NewHandler(analyticsService service.AnalyticsService) *Handler {
 	return &Handler{
 		analyticsService: analyticsService,
 	}
@@ -43,11 +43,11 @@ func (h *Handler) RecordClick(c *gin.Context) {
 	}
 
 	input := service.RecordClickInput{
-		ItemID: req.ItemID,
-		UserID: req.UserID,
+		ItemID:    req.ItemID,
+		UserID:    req.UserID,
 		IPAddress: req.IPAddress,
 		UserAgent: req.UserAgent,
-		Referrer: req.Referrer,
+		Referrer:  req.Referrer,
 	}
 
 	err := h.analyticsService.RecordClick(c, input)
@@ -56,7 +56,7 @@ func (h *Handler) RecordClick(c *gin.Context) {
 		return
 	}
 
-	api.RespondWithSuccess(c, nil,"Click record successfully")
+	api.RespondWithSuccess(c, nil, "Click record successfully")
 }
 
 // record page view
@@ -69,10 +69,10 @@ func (h *Handler) RecordPageView(c *gin.Context) {
 
 	input := service.RecordPageViewInput{
 		ProfileID: req.ProfileID,
-		UserID: req.UserID,
+		UserID:    req.UserID,
 		IPAddress: req.IPAddress,
 		UserAgent: req.UserAgent,
-		Referrer: req.Referrer,
+		Referrer:  req.Referrer,
 	}
 
 	err := h.analyticsService.RecordPageView(c, input)
@@ -88,7 +88,7 @@ func (h *Handler) RecordPageView(c *gin.Context) {
 func (h *Handler) GetContentItemAnalytics(c *gin.Context) {
 	itemID := c.Param("id")
 	page, pageSize := getPaginationParams(c)
-	
+
 	analytics, err := h.analyticsService.GetContentItemAnalytics(c, itemID, page, pageSize)
 	if err != nil {
 		api.HandleError(c, err)
@@ -98,7 +98,7 @@ func (h *Handler) GetContentItemAnalytics(c *gin.Context) {
 	api.RespondWithSuccess(c, analytics, "Content item analytics retreived successfully")
 }
 
-//get user analytics
+// get user analytics
 func (h *Handler) GetUserAnalytics(c *gin.Context) {
 	userID := c.Param("id")
 	page, pageSize := getPaginationParams(c)
@@ -122,8 +122,8 @@ func (h *Handler) GetUserAnalyticsByTimeRange(c *gin.Context) {
 
 	input := service.TimeRangeInput{
 		StartDate: req.StartDate,
-		EndDate: req.EndDate,
-		Limit: req.Limit,
+		EndDate:   req.EndDate,
+		Limit:     req.Limit,
 	}
 
 	analytics, err := h.analyticsService.GetUserAnalyticsByTimeRange(c, userID, input)
@@ -220,8 +220,6 @@ func (h *Handler) GetReferrerAnalytics(c *gin.Context) {
 
 	api.RespondWithSuccess(c, analytics, "Referrer analytics retrieved successfully")
 }
-
-
 
 func getPaginationParams(c *gin.Context) (int, int) {
 	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))

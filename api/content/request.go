@@ -2,7 +2,6 @@ package content
 
 import "github.com/google/uuid"
 
-
 type CreateContentItemRequest struct {
 	UserID       string                 `json:"user_id" binding:"required"`
 	ContentID    string                 `json:"content_id" binding:"required"`

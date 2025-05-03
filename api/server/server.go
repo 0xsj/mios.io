@@ -23,9 +23,10 @@ type Server struct {
 	log    log.Logger
 	// server *http.Server
 }
+
 func NewServer(config config.Config, store db.Querier, log log.Logger) *Server {
 	router := gin.New()
-	
+
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 
@@ -35,7 +36,7 @@ func NewServer(config config.Config, store db.Querier, log log.Logger) *Server {
 		store:  store,
 		log:    log,
 	}
-	
+
 	return server
 }
 
@@ -49,7 +50,7 @@ func (s *Server) RegisterHandlers(
 ) {
 	authMiddleware := middleware.AuthMiddleware(authService)
 	adminMiddleware := middleware.AdminMiddleware()
-	
+
 	publicRoutes := s.router.Group("/api")
 	{
 		authGroup := publicRoutes.Group("/auth")
@@ -61,19 +62,19 @@ func (s *Server) RegisterHandlers(
 			authGroup.POST("/reset-password", authHandler.ResetPassword)
 			authGroup.POST("/verify-email", authHandler.VerifyEmail)
 		}
-		
+
 		publicUserGroup := publicRoutes.Group("/users")
 		{
 			publicUserGroup.GET("/username/:username", userHandler.GetUserByUsername)
 			publicUserGroup.GET("/handle/:handle", userHandler.GetUserbyHandle)
 		}
-		
+
 		publicContentGroup := publicRoutes.Group("/content")
 		{
 			publicContentGroup.GET("/user/:user_id", contentHandler.GetUserContentItems)
 		}
 	}
-	
+
 	protectedRoutes := s.router.Group("/api")
 	protectedRoutes.Use(authMiddleware)
 	{
@@ -81,7 +82,7 @@ func (s *Server) RegisterHandlers(
 		{
 			authGroup.POST("/logout", authHandler.Logout)
 		}
-		
+
 		userGroup := protectedRoutes.Group("/users")
 		{
 			userGroup.GET("/:id", userHandler.GetUser)
@@ -90,7 +91,7 @@ func (s *Server) RegisterHandlers(
 			userGroup.PATCH("/:id/onboarded", userHandler.UpdateOnboardedStatus)
 			userGroup.DELETE("/:id", userHandler.DeleteUser)
 		}
-		
+
 		contentGroup := protectedRoutes.Group("/content")
 		{
 			contentGroup.POST("", contentHandler.CreateContentItem)
@@ -113,16 +114,16 @@ func (s *Server) RegisterHandlers(
 			analyticsGroup.POST("/users/:id/referrers", analyticsHandler.GetReferrerAnalytics)
 		}
 	}
-	
+
 	// Admin routes
 	adminRoutes := protectedRoutes.Group("/admin")
 	adminRoutes.Use(adminMiddleware)
 	{
 		adminRoutes.PATCH("/users/:id/premium", userHandler.UpdatePremiumStatus)
 		adminRoutes.PATCH("/users/:id/admin", userHandler.UpdateAdminstatus)
-		
+
 	}
-	
+
 	s.router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",

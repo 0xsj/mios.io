@@ -176,7 +176,7 @@ func (s *authService) Login(ctx context.Context, input LoginInput) (*TokenRespon
 		return nil, api.ErrInternalServer
 	}
 	fmt.Printf("User found with ID: %s\n", user.UserID)
-    
+
 	auth, err := s.authRepo.GetAuthByUserID(ctx, user.UserID)
 	if err != nil {
 		fmt.Printf("Error in authRepo.GetAuthByUserID: %v\n", err)
@@ -184,7 +184,6 @@ func (s *authService) Login(ctx context.Context, input LoginInput) (*TokenRespon
 	}
 
 	fmt.Printf("Auth found for user: %s, Salt length: %d\n", user.UserID, len(auth.Salt))
-    
 
 	if auth.LockedUntil != nil && time.Now().Before(*auth.LockedUntil) {
 		return nil, api.ErrForbidden

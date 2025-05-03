@@ -67,7 +67,6 @@ func (h *Handler) CreateContentItem(c *gin.Context) {
 	api.RespondWithSuccess(c, contentItem, "Content item created successfully", http.StatusCreated)
 }
 
-
 func (h *Handler) GetContentItem(c *gin.Context) {
 	itemID := c.Param("id")
 	if _, err := uuid.Parse(itemID); err != nil {
@@ -83,7 +82,6 @@ func (h *Handler) GetContentItem(c *gin.Context) {
 
 	api.RespondWithSuccess(c, contentItem, "Content item retrieved successfully")
 }
-
 
 func (h *Handler) GetUserContentItems(c *gin.Context) {
 	userID := c.Param("user_id")

@@ -37,16 +37,16 @@ func HashPassword(password string) (string, string, error) {
 }
 
 func VerifyPassword(password, hash, salt string) error {
-    saltedPassword := password + salt
-    
-    err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(saltedPassword))
-    if err != nil {
-        fmt.Printf("Password verification failed: %v\n", err)
-        if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-            return ErrPasswordMismatch
-        }
-        return fmt.Errorf("error verifying password: %w", err)
-    }
-    
-    return nil
+	saltedPassword := password + salt
+
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(saltedPassword))
+	if err != nil {
+		fmt.Printf("Password verification failed: %v\n", err)
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return ErrPasswordMismatch
+		}
+		return fmt.Errorf("error verifying password: %w", err)
+	}
+
+	return nil
 }
