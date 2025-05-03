@@ -2,11 +2,13 @@ package service
 
 import (
 	"context"
-	"errors"
 	"regexp"
 	"strings"
+	"time"
 
-	"github.com/0xsj/gin-sqlc/api"
+	"github.com/0xsj/gin-sqlc/log"
+	apperror "github.com/0xsj/gin-sqlc/pkg/errors"
+
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
 	"github.com/0xsj/gin-sqlc/repository"
 	"github.com/google/uuid"
@@ -72,25 +74,41 @@ type UserDTO struct {
 
 type userService struct {
 	userRepo repository.UserRepository
+	logger   log.Logger
 }
 
-func NewUserService(userRepo repository.UserRepository) UserService {
+func NewUserService(userRepo repository.UserRepository, logger log.Logger) UserService {
 	return &userService{
 		userRepo: userRepo,
+		logger:   logger,
 	}
+}
+
+func handleValidationError(message string, err error) error {
+	return apperror.NewValidationError(message, err)
+}
+
+func parseUUID(id string) (uuid.UUID, error) {
+	userID, err := uuid.Parse(id)
+	if err != nil {
+		return uuid.UUID{}, apperror.NewBadRequestError("Invalid user ID format", err)
+	}
+	return userID, nil
 }
 
 func (s *userService) CreateUser(ctx context.Context, input CreateUserInput) (*UserDTO, error) {
+	s.logger.Infof("Creating new user with username: %s, email: %s", input.Username, input.Email)
+
 	if !isValidUsername(input.Username) {
-		return nil, api.ErrInvalidInput
+		return nil, handleValidationError("Invalid username format", nil)
 	}
 
 	if !isValidEmail(input.Email) {
-		return nil, api.ErrInvalidInput
+		return nil, handleValidationError("Invalid email format", nil)
 	}
 
 	if !isValidHandle(input.Handle) {
-		return nil, api.ErrInvalidInput
+		return nil, handleValidationError("Invalid handle format", nil)
 	}
 
 	params := repository.CreateUserParams{
@@ -108,267 +126,285 @@ func (s *userService) CreateUser(ctx context.Context, input CreateUserInput) (*U
 		Onboarded:       input.Onboarded,
 	}
 
+	start := time.Now()
 	user, err := s.userRepo.CreateUser(ctx, params)
+	duration := time.Since(start)
+
 	if err != nil {
-		if err == repository.ErrDuplicateKey {
-			return nil, api.ErrDuplicateEntry
-		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to create user: %v", err)
+		return nil, err
 	}
+
+	s.logger.Infof("User created successfully in %v: %s", duration, user.UserID)
 	return mapUserToDTO(user), nil
 }
 
 func (s *userService) GetUser(ctx context.Context, id string) (*UserDTO, error) {
-	userID, err := uuid.Parse(id)
+	s.logger.Debugf("Getting user by ID: %s", id)
+
+	userID, err := parseUUID(id)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		return nil, err
 	}
+
+	start := time.Now()
 	user, err := s.userRepo.GetUser(ctx, userID)
+	duration := time.Since(start)
+
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
-		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get user by ID %s: %v", id, err)
+		return nil, err
 	}
+
+	s.logger.Debugf("Retrieved user by ID %s in %v", id, duration)
 	return mapUserToDTO(user), nil
 }
 
 func (s *userService) GetUserByUsername(ctx context.Context, username string) (*UserDTO, error) {
+	s.logger.Debugf("Getting user by username: %s", username)
+
+	start := time.Now()
 	user, err := s.userRepo.GetUserByUsername(ctx, username)
+	duration := time.Since(start)
+
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
-		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get user by username %s: %v", username, err)
+		return nil, err
 	}
+
+	s.logger.Debugf("Retrieved user by username %s in %v", username, duration)
 	return mapUserToDTO(user), nil
 }
 
 func (s *userService) GetUserByHandle(ctx context.Context, handle string) (*UserDTO, error) {
+	s.logger.Debugf("Getting user by handle: %s", handle)
+
+	start := time.Now()
 	user, err := s.userRepo.GetUserByHandle(ctx, handle)
+	duration := time.Since(start)
+
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
-		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get user by handle %s: %v", handle, err)
+		return nil, err
 	}
+
+	s.logger.Debugf("Retrieved user by handle %s in %v", handle, duration)
 	return mapUserToDTO(user), nil
 }
 
 func (s *userService) GetUserByEmail(ctx context.Context, email string) (*UserDTO, error) {
+	s.logger.Debugf("Getting user by email: %s", email)
+
+	start := time.Now()
 	user, err := s.userRepo.GetUserByEmail(ctx, email)
+	duration := time.Since(start)
+
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
-		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get user by email %s: %v", email, err)
+		return nil, err
 	}
+
+	s.logger.Debugf("Retrieved user by email %s in %v", email, duration)
 	return mapUserToDTO(user), nil
 }
 
 func (s *userService) UpdateUser(ctx context.Context, id string, input UpdateUserInput) (*UserDTO, error) {
-	userID, err := uuid.Parse(id)
+	s.logger.Infof("Updating user with ID: %s", id)
+
+	userID, err := parseUUID(id)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		return nil, err
 	}
 
+	start := time.Now()
 	currentUser, err := s.userRepo.GetUser(ctx, userID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
-		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get user for update with ID %s: %v", id, err)
+		return nil, err
 	}
 
 	params := repository.UpdateUserParams{
-		UserID: userID,
-	}
-
-	if input.FirstName != nil {
-		params.FirstName = *input.FirstName
-	}
-
-	if input.LastName != nil {
-		params.LastName = *input.LastName
-	}
-
-	if input.Bio != nil {
-		params.Bio = *input.Bio
-	}
-
-	if input.ProfileImageURL != nil {
-		params.ProfileImageURL = *input.ProfileImageURL
-	}
-
-	if input.LayoutVersion != nil {
-		params.LayoutVersion = *input.LayoutVersion
-	}
-
-	if input.CustomDomain != nil {
-		params.CustomDomain = *input.CustomDomain
+		UserID:          userID,
+		FirstName:       getValueOrEmpty(input.FirstName),
+		LastName:        getValueOrEmpty(input.LastName),
+		Bio:             getValueOrEmpty(input.Bio),
+		ProfileImageURL: getValueOrEmpty(input.ProfileImageURL),
+		LayoutVersion:   getValueOrEmpty(input.LayoutVersion),
+		CustomDomain:    getValueOrEmpty(input.CustomDomain),
 	}
 
 	err = s.userRepo.UpdateUser(ctx, params)
 	if err != nil {
-		if err == repository.ErrDuplicateKey {
-			return nil, api.ErrDuplicateEntry
-		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to update user details with ID %s: %v", id, err)
+		return nil, err
 	}
 
 	if input.Username != nil && *input.Username != currentUser.Username {
 		if !isValidUsername(*input.Username) {
-			return nil, api.ErrInvalidInput
+			return nil, handleValidationError("Invalid username format", nil)
 		}
 
 		err = s.userRepo.UpdateUsername(ctx, userID, *input.Username)
 		if err != nil {
-			if err == repository.ErrDuplicateKey {
-				return nil, api.ErrDuplicateEntry
-			}
-			return nil, api.ErrInternalServer
+			s.logger.Errorf("Failed to update username for user ID %s: %v", id, err)
+			return nil, err
 		}
 	}
 
 	if input.Email != nil && *input.Email != currentUser.Email {
 		if !isValidEmail(*input.Email) {
-			return nil, api.ErrInvalidInput
+			return nil, handleValidationError("Invalid email format", nil)
 		}
 
 		err = s.userRepo.UpdateEmail(ctx, userID, *input.Email)
 		if err != nil {
-			if err == repository.ErrDuplicateKey {
-				return nil, api.ErrDuplicateEntry
-			}
-			return nil, api.ErrInternalServer
+			s.logger.Errorf("Failed to update email for user ID %s: %v", id, err)
+			return nil, err
 		}
 	}
 
 	updatedUser, err := s.userRepo.GetUser(ctx, userID)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get updated user with ID %s: %v", id, err)
+		return nil, apperror.NewInternalError("Failed to retrieve updated user", err)
 	}
 
+	duration := time.Since(start)
+	s.logger.Infof("User with ID %s updated successfully in %v", id, duration)
 	return mapUserToDTO(updatedUser), nil
-
 }
 
 func (s *userService) UpdateHandle(ctx context.Context, id string, handle string) (*UserDTO, error) {
-	userID, err := uuid.Parse(id)
+	s.logger.Infof("Updating handle for user ID: %s to: %s", id, handle)
+
+	userID, err := parseUUID(id)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		return nil, err
 	}
 
 	if !isValidHandle(handle) {
-		return nil, api.ErrInvalidInput
+		return nil, handleValidationError("Invalid handle format", nil)
 	}
 
+	start := time.Now()
 	err = s.userRepo.UpdateHandle(ctx, userID, handle)
 	if err != nil {
-		if err == repository.ErrDuplicateKey {
-			return nil, api.ErrDuplicateEntry
-		}
-
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
-		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to update handle for user ID %s: %v", id, err)
+		return nil, err
 	}
 
 	updatedUser, err := s.userRepo.GetUser(ctx, userID)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get updated user with ID %s: %v", id, err)
+		return nil, apperror.NewInternalError("Failed to retrieve updated user", err)
 	}
 
+	duration := time.Since(start)
+	s.logger.Infof("Handle for user ID %s updated successfully in %v", id, duration)
 	return mapUserToDTO(updatedUser), nil
-
 }
 
 func (s *userService) UpdatePremiumStatus(ctx context.Context, id string, isPremium bool) (*UserDTO, error) {
-	userID, err := uuid.Parse(id)
+	s.logger.Infof("Updating premium status for user ID: %s to: %v", id, isPremium)
+
+	userID, err := parseUUID(id)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		return nil, err
 	}
 
+	start := time.Now()
 	err = s.userRepo.UpdatePremiumStatus(ctx, userID, isPremium)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
-		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to update premium status for user ID %s: %v", id, err)
+		return nil, err
 	}
 
 	updatedUser, err := s.userRepo.GetUser(ctx, userID)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get updated user with ID %s: %v", id, err)
+		return nil, apperror.NewInternalError("Failed to retrieve updated user", err)
 	}
 
+	duration := time.Since(start)
+	s.logger.Infof("Premium status for user ID %s updated successfully in %v", id, duration)
 	return mapUserToDTO(updatedUser), nil
 }
 
 func (s *userService) UpdateAdminStatus(ctx context.Context, id string, isAdmin bool) (*UserDTO, error) {
-	userID, err := uuid.Parse(id)
+	s.logger.Infof("Updating admin status for user ID: %s to: %v", id, isAdmin)
+
+	userID, err := parseUUID(id)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		return nil, err
 	}
 
+	start := time.Now()
 	err = s.userRepo.UpdateAdminStatus(ctx, userID, isAdmin)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
-		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to update admin status for user ID %s: %v", id, err)
+		return nil, err
 	}
 
 	updatedUser, err := s.userRepo.GetUser(ctx, userID)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get updated user with ID %s: %v", id, err)
+		return nil, apperror.NewInternalError("Failed to retrieve updated user", err)
 	}
 
+	duration := time.Since(start)
+	s.logger.Infof("Admin status for user ID %s updated successfully in %v", id, duration)
 	return mapUserToDTO(updatedUser), nil
 }
 
 func (s *userService) UpdateOnboardedStatus(ctx context.Context, id string, onboarded bool) (*UserDTO, error) {
-	userID, err := uuid.Parse(id)
+	s.logger.Infof("Updating onboarded status for user ID: %s to: %v", id, onboarded)
+
+	userID, err := parseUUID(id)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		return nil, err
 	}
 
+	start := time.Now()
 	err = s.userRepo.UpdateOnboardedStatus(ctx, userID, onboarded)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
-		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to update onboarded status for user ID %s: %v", id, err)
+		return nil, err
 	}
 
 	updatedUser, err := s.userRepo.GetUser(ctx, userID)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get updated user with ID %s: %v", id, err)
+		return nil, apperror.NewInternalError("Failed to retrieve updated user", err)
 	}
 
+	duration := time.Since(start)
+	s.logger.Infof("Onboarded status for user ID %s updated successfully in %v", id, duration)
 	return mapUserToDTO(updatedUser), nil
 }
 
 func (s *userService) DeleteUser(ctx context.Context, id string) error {
-	userID, err := uuid.Parse(id)
+	s.logger.Warnf("Deleting user with ID: %s", id)
+
+	userID, err := parseUUID(id)
 	if err != nil {
-		return api.ErrInvalidInput
+		return err
 	}
 
 	_, err = s.userRepo.GetUser(ctx, userID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return api.ErrNotFound
-		}
-		return api.ErrInternalServer
+		s.logger.Errorf("Failed to find user for deletion with ID %s: %v", id, err)
+		return err
 	}
 
+	start := time.Now()
 	err = s.userRepo.DeleteUser(ctx, userID)
 	if err != nil {
-		return api.ErrInternalServer
+		s.logger.Errorf("Failed to delete user with ID %s: %v", id, err)
+		return err
 	}
 
+	duration := time.Since(start)
+	s.logger.Warnf("User with ID %s deleted successfully in %v", id, duration)
 	return nil
 }
 
@@ -443,4 +479,11 @@ func isValidEmail(email string) bool {
 	pattern := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
 	match, _ := regexp.MatchString(pattern, email)
 	return match
+}
+
+func getValueOrEmpty(ptr *string) string {
+	if ptr == nil {
+		return ""
+	}
+	return *ptr
 }

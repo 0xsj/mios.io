@@ -2,11 +2,13 @@
 package errors
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/0xsj/gin-sqlc/log"
+	"github.com/jackc/pgx/v4"
 )
 
 var (
@@ -19,6 +21,12 @@ var (
 	ErrValidationFailed = errors.New("validation failed")
 	ErrDatabase         = errors.New("database error")
 	ErrExternalService  = errors.New("external service error")
+)
+
+const (
+	PgErrUniqueViolation     = "23505"
+	PgErrForeignKeyViolation = "23503"
+	PgErrCheckViolation      = "23514"
 )
 
 type LogLevel int
@@ -57,6 +65,7 @@ func (e *AppError) Is(target error) bool {
 	return errors.Is(e.Err, target)
 }
 
+// Log logs the error using the provided logger
 func (e *AppError) Log(logger log.Logger) {
 	errMsg := fmt.Sprintf("Error: %s (Code: %s, Status: %d)",
 		e.Message, e.Code, e.Status)
@@ -81,6 +90,7 @@ func (e *AppError) Log(logger log.Logger) {
 	}
 }
 
+// Helper functions for creating specific error types
 func NewBadRequestError(message string, err error) *AppError {
 	return &AppError{
 		Err:      err,
@@ -207,12 +217,6 @@ func WrapWith(err error, message string, errType *AppError) error {
 	}
 }
 
-const (
-	PgErrUniqueViolation     = "23505"
-	PgErrForeignKeyViolation = "23503"
-	PgErrCheckViolation      = "23514"
-)
-
 func IsPgError(err error, code string) bool {
 	pgErr, ok := err.(interface {
 		Code() string
@@ -222,4 +226,30 @@ func IsPgError(err error, code string) bool {
 		return true
 	}
 	return false
+}
+
+func HandleDBError(err error, entity string) *AppError {
+	if err == nil {
+		return nil
+	}
+
+	switch {
+	case errors.Is(err, context.Canceled):
+		return NewInternalError("Request canceled", err)
+	case errors.Is(err, context.DeadlineExceeded):
+		return NewInternalError("Request timeout", err)
+
+	case IsPgError(err, PgErrUniqueViolation):
+		return NewConflictError(fmt.Sprintf("%s already exists", entity), err)
+	case IsPgError(err, PgErrForeignKeyViolation):
+		return NewBadRequestError("Invalid reference to related entity", err)
+	case IsPgError(err, PgErrCheckViolation):
+		return NewValidationError("Data validation failed", err)
+
+	case errors.Is(err, pgx.ErrNoRows):
+		return NewNotFoundError(fmt.Sprintf("%s not found", entity), err)
+
+	default:
+		return NewDatabaseError("Database operation failed", err)
+	}
 }

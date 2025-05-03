@@ -8,7 +8,7 @@ Content-Type: {{contentType}}
 
 {
   "email": "test@example.com",
-  "password": "Password123!"
+  "password": "NewPassword123!"
 }
 
 ### Store tokens and IDs from login response
@@ -20,7 +20,7 @@ GET {{baseUrl}}/api/users/{{userId}}
 Authorization: Bearer {{accessToken}}
 
 ### Get User by Username
-GET {{baseUrl}}/api/users/username/testuser
+GET {{baseUrl}}/api/users/username/tetuser
 
 ### Get User by Handle
 GET {{baseUrl}}/api/users/handle/testuser

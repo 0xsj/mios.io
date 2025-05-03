@@ -79,13 +79,13 @@ func main() {
 	queries := db.New(dbpool)
 
 	logger.Info("Initializing repositories...")
-	userRepo := repository.NewUserRepository(queries)
+	userRepo := repository.NewUserRepository(queries, logger)
 	authRepo := repository.NewAuthRepository(queries)
 	contentRepo := repository.NewContentRepository(queries)
 	analyticsRepo := repository.NewAnalyticsRepository(queries)
 
 	logger.Info("Initializing services...")
-	userService := service.NewUserService(userRepo)
+	userService := service.NewUserService(userRepo, logger)
 	authService := service.NewAuthService(userRepo, authRepo, cfg.JWTSecret, cfg.GetTokenDuration())
 	contentService := service.NewContentService(contentRepo, userRepo)
 	analyticsService := service.NewAnalyticsService(analyticsRepo, contentRepo, userRepo)
