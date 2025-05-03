@@ -38,7 +38,7 @@ POST {{baseUrl}}/api/auth/refresh
 Content-Type: {{contentType}}
 
 {
-  "refresh_token": "{{refreshToken}}"
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNDQ0Njg2ZTctOWMzYi00M2ZhLTg3MWEtMDc3YjBmMTQ1NDczIiwidXNlcm5hbWUiOiJ0ZXN0dXNlciIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsImlzX2FkbWluIjpmYWxzZSwiaXNfcHJlbWl1bSI6ZmFsc2UsInRva2VuX3R5cGUiOiJyZWZyZXNoIiwiZXhwIjoxNzQ2NDc4MDY1LCJuYmYiOjE3NDU4NzMyNjUsImlhdCI6MTc0NTg3MzI2NSwianRpIjoiODllYWEwODQtYWE0MC00MjU4LWE4NWItODk0MGQyZDA3ZDU1In0.8Kurt4cdNgscq_P3jchrFxvZ4K6lYzMdzYiJja21GSY"
 }
 
 ### Forgot Password

@@ -79,7 +79,7 @@ func main() {
 	queries := db.New(dbpool)
 
 	logger.Info("Initializing repositories...")
-	userRepo := repository.NewUserRepository(queries)
+	userRepo := repository.NewUserRepository(queries, logger)
 	authRepo := repository.NewAuthRepository(queries)
 	contentRepo := repository.NewContentRepository(queries)
 	analyticsRepo := repository.NewAnalyticsRepository(queries)

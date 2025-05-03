@@ -11,7 +11,6 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-// Common application errors
 var (
 	ErrInvalidInput     = errors.New("invalid input")
 	ErrUnauthorized     = errors.New("unauthorized")
@@ -24,14 +23,12 @@ var (
 	ErrExternalService  = errors.New("external service error")
 )
 
-// PostgreSQL-specific error codes
 const (
 	PgErrUniqueViolation     = "23505"
 	PgErrForeignKeyViolation = "23503"
 	PgErrCheckViolation      = "23514"
 )
 
-// LogLevel defines the severity of the error for logging
 type LogLevel int
 
 const (
@@ -42,7 +39,6 @@ const (
 	LogLevelFatal
 )
 
-// AppError provides structured error information
 type AppError struct {
 	Err      error
 	Message  string
@@ -185,7 +181,6 @@ func NewExternalServiceError(message string, err error) *AppError {
 	}
 }
 
-// Wrap wraps an error with a message
 func Wrap(err error, message string) error {
 	if err == nil {
 		return nil
@@ -208,7 +203,6 @@ func Wrap(err error, message string) error {
 	}
 }
 
-// WrapWith wraps an error with a message and specific error type
 func WrapWith(err error, message string, errType *AppError) error {
 	if err == nil {
 		return nil
@@ -223,7 +217,6 @@ func WrapWith(err error, message string, errType *AppError) error {
 	}
 }
 
-// IsPgError checks if an error is a specific PostgreSQL error
 func IsPgError(err error, code string) bool {
 	pgErr, ok := err.(interface {
 		Code() string

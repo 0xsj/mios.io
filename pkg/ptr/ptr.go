@@ -29,3 +29,10 @@ func Int64(i int64) *int64 {
 func Float64(f float64) *float64 {
     return &f
 }
+
+func getValueOrEmpty(ptr *string) string {
+	if ptr == nil {
+		return ""
+	}
+	return *ptr
+}
