@@ -7,7 +7,6 @@ import (
 	apperror "github.com/0xsj/gin-sqlc/pkg/errors"
 	"github.com/0xsj/gin-sqlc/pkg/ptr"
 	"github.com/google/uuid"
-	"github.com/jackc/pgconn"
 )
 
 
@@ -86,36 +85,29 @@ func (r *SQLCUserRepository) CreateUser(ctx context.Context, arg CreateUserParam
 		Onboarded:       ptr.Bool(arg.Onboarded),
 	}
 
-	user, err := r.db.CreateUser(ctx, params)
-	if err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			switch pgErr.Code {
-			case apperror.PgErrUniqueViolation:
-				return nil, apperror.NewConflictError("User already exists", err)
-			case apperror.PgErrForeignKeyViolation:
-				return nil, apperror.NewConflictError("Invalid reference to related entity", err)
-			}
-		}
-		return nil, apperror.NewDatabaseError("failed to create user", err)
+	if arg.Username == "" || arg.Email == "" {
+		return nil, apperror.NewValidationError("username and email are required", nil)
 	}
 
+	user, err := r.db.CreateUser(ctx, params)
+	if err != nil {
+		return nil, apperror.HandleDBError(err, "user")
+	}
 	return user, nil
 }
 
 func (r *SQLCUserRepository) GetUser(ctx context.Context, userID uuid.UUID) (*db.User, error) {
 	user, err := r.db.GetUser(ctx, userID)
 	if err != nil {
-		return nil, ErrRecordNotFound
+		return nil, apperror.HandleDBError(err, "user")
 	}
-
 	return user, nil
 }
 
 func (r *SQLCUserRepository) GetUserByUsername(ctx context.Context, username string) (*db.User, error) {
 	user, err := r.db.GetUserByUsername(ctx, username)
 	if err != nil {
-		return nil, ErrRecordNotFound
+		return nil, apperror.HandleDBError(err, "user")
 	}
 	return user, nil
 }
@@ -123,121 +115,76 @@ func (r *SQLCUserRepository) GetUserByUsername(ctx context.Context, username str
 func (r *SQLCUserRepository) GetUserByHandle(ctx context.Context, handle string) (*db.User, error) {
 	user, err := r.db.GetUserByHandle(ctx, handle)
 	if err != nil {
-		return nil, ErrRecordNotFound
+		return nil, apperror.HandleDBError(err, "user")
 	}
-
 	return user, nil
 }
 
 func (r *SQLCUserRepository) GetUserByEmail(ctx context.Context, email string) (*db.User, error) {
 	user, err := r.db.GetUserByEmail(ctx, email)
 	if err != nil {
-		return nil, ErrRecordNotFound
+		return nil, apperror.HandleDBError(err, "user")
 	}
 	return user, nil
 }
 
 func (r *SQLCUserRepository) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
-	var firstNamePtr, lastNamePtr, profileImageURLPtr, bioPtr *string
-	var layoutVersionPtr, customDomainPtr *string
-
-	if arg.FirstName != "" {
-		firstNamePtr = &arg.FirstName
-	}
-
-	if arg.LastName != "" {
-		lastNamePtr = &arg.LastName
-	}
-
-	if arg.ProfileImageURL != "" {
-		profileImageURLPtr = &arg.ProfileImageURL
-	}
-
-	if arg.Bio != "" {
-		bioPtr = &arg.Bio
-	}
-
-	if arg.LayoutVersion != "" {
-		layoutVersionPtr = &arg.LayoutVersion
-	}
-
-	if arg.CustomDomain != "" {
-		customDomainPtr = &arg.CustomDomain
-	}
-
 	params := db.UpdateUserParams{
 		UserID:          arg.UserID,
-		FirstName:       firstNamePtr,
-		LastName:        lastNamePtr,
-		ProfileImageUrl: profileImageURLPtr,
-		Bio:             bioPtr,
-		LayoutVersion:   layoutVersionPtr,
-		CustomDomain:    customDomainPtr,
+		FirstName:       ptr.String(arg.FirstName),
+		LastName:        ptr.String(arg.LastName),
+		ProfileImageUrl: ptr.String(arg.ProfileImageURL),
+		Bio:             ptr.String(arg.Bio),
+		LayoutVersion:   ptr.String(arg.LayoutVersion),
+		CustomDomain:    ptr.String(arg.CustomDomain),
 	}
 
 	err := r.db.UpdateUser(ctx, params)
 	if err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			if pgErr.Code == "23505" {
-				return ErrDuplicateKey
-			}
-		}
-		return ErrDatabase
-	}
+        return apperror.HandleDBError(err, "user")
+    }
 
 	return nil
 }
 
 func (r *SQLCUserRepository) UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error {
-	params := db.UpdateUsernameParams{
-		UserID:   userID,
-		Username: username,
-	}
+    params := db.UpdateUsernameParams{
+        UserID:   userID,
+        Username: username,
+    }
 
-	err := r.db.UpdateUsername(ctx, params)
-	if err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok && pgErr.Code == "23505" {
-			return ErrDuplicateKey
-		}
-		return ErrDatabase
-	}
-	return nil
+    err := r.db.UpdateUsername(ctx, params)
+    if err != nil {
+        return apperror.HandleDBError(err, "username")
+    }
+    return nil
 }
 
-func (r *SQLCUserRepository) UpdateHandle(ctx context.Context, userID uuid.UUID, handle string) error {
-	params := db.UpdateHandleParams{
-		UserID: userID,
-		Handle: handle,
-	}
 
-	err := r.db.UpdateHandle(ctx, params)
-	if err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok && pgErr.Code == "23505" {
-			return ErrDuplicateKey
-		}
-		return ErrDatabase
-	}
-	return nil
+func (r *SQLCUserRepository) UpdateHandle(ctx context.Context, userID uuid.UUID, handle string) error {
+    params := db.UpdateHandleParams{
+        UserID: userID,
+        Handle: handle,
+    }
+
+    err := r.db.UpdateHandle(ctx, params)
+    if err != nil {
+        return apperror.HandleDBError(err, "handle")
+    }
+    return nil
 }
 
 func (r *SQLCUserRepository) UpdateEmail(ctx context.Context, userID uuid.UUID, email string) error {
-	params := db.UpdateEmailParams{
-		UserID: userID,
-		Email:  email,
-	}
+    params := db.UpdateEmailParams{
+        UserID: userID,
+        Email:  email,
+    }
 
-	err := r.db.UpdateEmail(ctx, params)
-	if err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok && pgErr.Code == "23505" {
-			return ErrDuplicateKey
-		}
-		return ErrDatabase
-	}
-	return nil
+    err := r.db.UpdateEmail(ctx, params)
+    if err != nil {
+        return apperror.HandleDBError(err, "email")
+    }
+    return nil
 }
 
 func (r *SQLCUserRepository) UpdatePremiumStatus(ctx context.Context, userID uuid.UUID, isPremium bool) error {
