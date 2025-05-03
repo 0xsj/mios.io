@@ -108,7 +108,6 @@ func (h *Handler) Login(c *gin.Context) {
 	api.RespondWithSuccess(c, response, "Login successful")
 }
 
-
 func (h *Handler) RefreshToken(c *gin.Context) {
 	var req RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

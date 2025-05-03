@@ -76,16 +76,16 @@ func (r *SQLCAuthRepository) CreateAuth(ctx context.Context, params CreateAuthPa
 }
 
 func (r *SQLCAuthRepository) GetAuthByUserID(ctx context.Context, userID uuid.UUID) (*db.Auth, error) {
-    fmt.Printf("Getting auth record for user ID: %s\n", userID)
-    
-    auth, err := r.db.GetAuthByUserID(ctx, userID)
-    if err != nil {
-        fmt.Printf("Error retrieving auth by user ID: %v\n", err)
-        return nil, ErrRecordNotFound
-    }
-    
-    fmt.Printf("Auth record found successfully\n")
-    return auth, nil
+	fmt.Printf("Getting auth record for user ID: %s\n", userID)
+
+	auth, err := r.db.GetAuthByUserID(ctx, userID)
+	if err != nil {
+		fmt.Printf("Error retrieving auth by user ID: %v\n", err)
+		return nil, ErrRecordNotFound
+	}
+
+	fmt.Printf("Auth record found successfully\n")
+	return auth, nil
 }
 
 func (r *SQLCAuthRepository) UpdatePassword(ctx context.Context, userID uuid.UUID, passwordHash, salt string) error {
@@ -160,21 +160,21 @@ func (r *SQLCAuthRepository) SetAccountLockout(ctx context.Context, userID uuid.
 }
 
 func (r *SQLCAuthRepository) StoreRefreshToken(ctx context.Context, userID uuid.UUID, refreshToken string) error {
-    fmt.Printf("Storing refresh token for user %s, token length: %d\n", userID, len(refreshToken))
-    
-    params := db.StoreRefreshTokenParams{
-        UserID:       userID,
-        RefreshToken: &refreshToken,
-    }
-    
-    err := r.db.StoreRefreshToken(ctx, params)
-    if err != nil {
-        fmt.Printf("Error storing refresh token: %v\n", err)
-        return ErrDatabase
-    }
-    
-    fmt.Println("Refresh token stored successfully")
-    return nil
+	fmt.Printf("Storing refresh token for user %s, token length: %d\n", userID, len(refreshToken))
+
+	params := db.StoreRefreshTokenParams{
+		UserID:       userID,
+		RefreshToken: &refreshToken,
+	}
+
+	err := r.db.StoreRefreshToken(ctx, params)
+	if err != nil {
+		fmt.Printf("Error storing refresh token: %v\n", err)
+		return ErrDatabase
+	}
+
+	fmt.Println("Refresh token stored successfully")
+	return nil
 }
 
 func (r *SQLCAuthRepository) InvalidateRefreshToken(ctx context.Context, userID uuid.UUID) error {

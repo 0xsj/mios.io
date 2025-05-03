@@ -1,15 +1,14 @@
-// pkg/response/response.go
 package response
 
 import (
-	stderrors "errors" // Standard Go errors package with alias
+	stderrors "errors"
 	"net/http"
 
-	"github.com/0xsj/gin-sqlc/pkg/errors" // Your custom errors package
+	"github.com/0xsj/gin-sqlc/log"
+	"github.com/0xsj/gin-sqlc/pkg/errors"
 	"github.com/gin-gonic/gin"
 )
 
-// Response represents a standard API response
 type Response struct {
 	Success bool   `json:"success"`
 	Message string `json:"message,omitempty"`
@@ -17,15 +16,12 @@ type Response struct {
 	Meta    any    `json:"meta,omitempty"`
 }
 
-// ErrorResponse represents an error response
 type ErrorResponse struct {
-	Status  int    `json:"-"`                 // HTTP status code, not shown in response
-	Code    string `json:"code"`              // Application-specific error code
-	Message string `json:"message"`           // User-friendly error message
-	Details any    `json:"details,omitempty"` // Optional details about the error
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Details any    `json:"details,omitempty"`
 }
 
-// PaginationMeta represents pagination metadata
 type PaginationMeta struct {
 	CurrentPage  int `json:"current_page"`
 	TotalPages   int `json:"total_pages"`
@@ -33,46 +29,38 @@ type PaginationMeta struct {
 	TotalRecords int `json:"total_records"`
 }
 
-// Common error responses
 var (
 	ErrBadRequestResponse = ErrorResponse{
-		Status:  http.StatusBadRequest,
 		Code:    "BAD_REQUEST",
 		Message: "The request was invalid",
 	}
 
 	ErrUnauthorizedResponse = ErrorResponse{
-		Status:  http.StatusUnauthorized,
 		Code:    "UNAUTHORIZED",
 		Message: "Authentication is required",
 	}
 
 	ErrForbiddenResponse = ErrorResponse{
-		Status:  http.StatusForbidden,
 		Code:    "FORBIDDEN",
 		Message: "You don't have permission to access this resource",
 	}
 
 	ErrNotFoundResponse = ErrorResponse{
-		Status:  http.StatusNotFound,
 		Code:    "NOT_FOUND",
 		Message: "The requested resource was not found",
 	}
 
 	ErrConflictResponse = ErrorResponse{
-		Status:  http.StatusConflict,
 		Code:    "CONFLICT",
 		Message: "The resource already exists",
 	}
 
 	ErrInternalServerResponse = ErrorResponse{
-		Status:  http.StatusInternalServerError,
 		Code:    "INTERNAL_SERVER_ERROR",
 		Message: "An unexpected error occurred",
 	}
 
 	ErrServiceUnavailableResponse = ErrorResponse{
-		Status:  http.StatusServiceUnavailable,
 		Code:    "SERVICE_UNAVAILABLE",
 		Message: "The service is currently unavailable",
 	}
@@ -97,7 +85,6 @@ func Success(c *gin.Context, data any, message string, statusCode ...int) {
 	c.JSON(code, resp)
 }
 
-// WithPagination sends a response with pagination metadata
 func WithPagination(c *gin.Context, data any, meta PaginationMeta) {
 	resp := Response{
 		Success: true,
@@ -107,48 +94,68 @@ func WithPagination(c *gin.Context, data any, meta PaginationMeta) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// NoContent sends a 204 No Content response
 func NoContent(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// Error sends an error response
 func Error(c *gin.Context, err ErrorResponse, details ...any) {
 	if len(details) > 0 {
 		err.Details = details[0]
 	}
-	c.JSON(err.Status, err)
+
+	statusCode := http.StatusInternalServerError
+
+	switch err.Code {
+	case "BAD_REQUEST", "VALIDATION_ERROR":
+		statusCode = http.StatusBadRequest
+	case "UNAUTHORIZED":
+		statusCode = http.StatusUnauthorized
+	case "FORBIDDEN":
+		statusCode = http.StatusForbidden
+	case "NOT_FOUND":
+		statusCode = http.StatusNotFound
+	case "CONFLICT":
+		statusCode = http.StatusConflict
+	case "SERVICE_UNAVAILABLE":
+		statusCode = http.StatusServiceUnavailable
+	}
+
+	c.JSON(statusCode, err)
 }
 
-// HandleError maps application errors to HTTP responses
-func HandleError(c *gin.Context, err error) {
-	// First check if it's our new AppError type
+func HandleError(c *gin.Context, err error, logger log.Logger) {
 	var appErr *errors.AppError
 	if stderrors.As(err, &appErr) {
-		// Use the embedded details
+		appErr.Log(logger)
+
 		c.JSON(appErr.Status, ErrorResponse{
-			Status:  appErr.Status,
 			Code:    appErr.Code,
 			Message: appErr.Message,
 		})
 		return
 	}
 
-	// Fall back to standard error types
 	switch {
 	case stderrors.Is(err, errors.ErrInvalidInput), stderrors.Is(err, errors.ErrValidationFailed):
+		logger.Warn("Bad request error:", err)
 		Error(c, ErrBadRequestResponse, err.Error())
 	case stderrors.Is(err, errors.ErrUnauthorized):
+		logger.Warn("Unauthorized error:", err)
 		Error(c, ErrUnauthorizedResponse)
 	case stderrors.Is(err, errors.ErrForbidden):
+		logger.Warn("Forbidden error:", err)
 		Error(c, ErrForbiddenResponse)
 	case stderrors.Is(err, errors.ErrNotFound):
+		logger.Info("Not found error:", err)
 		Error(c, ErrNotFoundResponse)
 	case stderrors.Is(err, errors.ErrDuplicateEntry):
+		logger.Warn("Conflict error:", err)
 		Error(c, ErrConflictResponse)
 	case stderrors.Is(err, errors.ErrDatabase) || stderrors.Is(err, errors.ErrExternalService):
+		logger.Error("Database/external service error:", err)
 		Error(c, ErrInternalServerResponse)
 	default:
+		logger.Error("Unhandled error:", err)
 		Error(c, ErrInternalServerResponse)
 	}
 }

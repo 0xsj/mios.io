@@ -23,7 +23,7 @@ func (w responseWriter) Write(b []byte) (int, error) {
 func LoggingMiddleware(logger log.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
-		
+
 		var requestBody []byte
 		if c.Request.Body != nil {
 			requestBody, _ = io.ReadAll(c.Request.Body)
@@ -34,12 +34,12 @@ func LoggingMiddleware(logger log.Logger) gin.HandlerFunc {
 			body:           &bytes.Buffer{},
 		}
 		c.Writer = w
-		
+
 		c.Next()
-		
+
 		duration := time.Since(start)
 		status := c.Writer.Status()
-		
+
 		if status >= 500 {
 			logger.Errorf("Request: %s %s, Status: %d, Duration: %s, Error: %s",
 				c.Request.Method, c.Request.URL.Path, status, duration, w.body.String())

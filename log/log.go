@@ -1,3 +1,4 @@
+// old log.go
 package log
 
 type Logger interface {
@@ -5,8 +6,8 @@ type Logger interface {
 	Infof(format string, args ...any)
 	Debug(args ...any)
 	Debugf(format string, args ...any)
-	Warn(args ...any)  
-    Warnf(format string, args ...any)
+	Warn(args ...any)
+	Warnf(format string, args ...any)
 	Error(args ...any)
 	Errorf(format string, args ...any)
 	Fatal(args ...any)

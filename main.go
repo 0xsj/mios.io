@@ -27,7 +27,7 @@ func testPasswordVerification() {
 	storedHash := "$2a$12$zS4uugKZD/axLQwjvSkGx.bIau3FX5UPox/digU9Quv9ujw9gpVDO"
 	storedSalt := "lNj+J85F8862k7icgRKChQ=="
 	plainPassword := "Password123!"
-	
+
 	err := password.VerifyPassword(plainPassword, storedHash, storedSalt)
 	fmt.Printf("Password verification result: %v\n", err)
 }
@@ -89,7 +89,7 @@ func main() {
 	authService := service.NewAuthService(userRepo, authRepo, cfg.JWTSecret, cfg.GetTokenDuration())
 	contentService := service.NewContentService(contentRepo, userRepo)
 	analyticsService := service.NewAnalyticsService(analyticsRepo, contentRepo, userRepo)
-	
+
 	logger.Info("Initializing handlers...")
 	userHandler := user.NewHandler(userService)
 	authHandler := auth.NewHandler(authService)
@@ -98,10 +98,10 @@ func main() {
 
 	logger.Info("Setting up server...")
 	server := api.NewServer(cfg, queries, logger)
-	
+
 	// Add middleware to the router
 	server.Router().Use(middleware.LoggingMiddleware(logger))
-	
+
 	// Register handlers
 	server.RegisterHandlers(userHandler, authHandler, contentHandler, authService, analyticsHandler)
 

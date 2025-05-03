@@ -12,14 +12,14 @@ type ZapLogger struct {
 
 func NewZapLogger(environment string) Logger {
 	var config zap.Config
-	
+
 	if environment == "production" {
 		config = zap.NewProductionConfig()
 	} else {
 		config = zap.NewDevelopmentConfig()
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	}
-	
+
 	logger, _ := config.Build()
 	return &ZapLogger{
 		logger: logger.Sugar(),
@@ -59,9 +59,9 @@ func (l *ZapLogger) Fatalf(format string, args ...any) {
 }
 
 func (l *ZapLogger) Warn(args ...any) {
-    l.logger.Warn(args...)
+	l.logger.Warn(args...)
 }
 
 func (l *ZapLogger) Warnf(format string, args ...any) {
-    l.logger.Warnf(format, args...)
+	l.logger.Warnf(format, args...)
 }

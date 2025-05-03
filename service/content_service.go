@@ -28,37 +28,37 @@ type contentService struct {
 }
 
 type CreateContentItemInput struct {
-	UserID      string                 `json:"user_id" binding:"required"`
-	ContentID   string                 `json:"content_id" binding:"required"`
-	ContentType string                 `json:"content_type" binding:"required"`
-	Title       *string                `json:"title"`
-	Href        *string                `json:"href"`
-	URL         *string                `json:"url"`
-	MediaType   *string                `json:"media_type"`
-	DesktopX    *int32                 `json:"desktop_x"`
-	DesktopY    *int32                 `json:"desktop_y"`
-	DesktopStyle *string               `json:"desktop_style"`
-	MobileX     *int32                 `json:"mobile_x"`
-	MobileY     *int32                 `json:"mobile_y"`
-	MobileStyle *string                `json:"mobile_style"`
-	HAlign      *string                `json:"halign"`
-	VAlign      *string                `json:"valign"`
-	ContentData map[string]interface{} `json:"content_data"`
-	Overrides   map[string]interface{} `json:"overrides"`
+	UserID       string                 `json:"user_id" binding:"required"`
+	ContentID    string                 `json:"content_id" binding:"required"`
+	ContentType  string                 `json:"content_type" binding:"required"`
+	Title        *string                `json:"title"`
+	Href         *string                `json:"href"`
+	URL          *string                `json:"url"`
+	MediaType    *string                `json:"media_type"`
+	DesktopX     *int32                 `json:"desktop_x"`
+	DesktopY     *int32                 `json:"desktop_y"`
+	DesktopStyle *string                `json:"desktop_style"`
+	MobileX      *int32                 `json:"mobile_x"`
+	MobileY      *int32                 `json:"mobile_y"`
+	MobileStyle  *string                `json:"mobile_style"`
+	HAlign       *string                `json:"halign"`
+	VAlign       *string                `json:"valign"`
+	ContentData  map[string]interface{} `json:"content_data"`
+	Overrides    map[string]interface{} `json:"overrides"`
 }
 
 type UpdateContentItemInput struct {
-	Title       *string                `json:"title"`
-	Href        *string                `json:"href"`
-	URL         *string                `json:"url"`
-	MediaType   *string                `json:"media_type"`
-	DesktopStyle *string               `json:"desktop_style"`
-	MobileStyle *string                `json:"mobile_style"`
-	HAlign      *string                `json:"halign"`
-	VAlign      *string                `json:"valign"`
-	ContentData map[string]interface{} `json:"content_data"`
-	Overrides   map[string]interface{} `json:"overrides"`
-	IsActive    *bool                  `json:"is_active"`
+	Title        *string                `json:"title"`
+	Href         *string                `json:"href"`
+	URL          *string                `json:"url"`
+	MediaType    *string                `json:"media_type"`
+	DesktopStyle *string                `json:"desktop_style"`
+	MobileStyle  *string                `json:"mobile_style"`
+	HAlign       *string                `json:"halign"`
+	VAlign       *string                `json:"valign"`
+	ContentData  map[string]interface{} `json:"content_data"`
+	Overrides    map[string]interface{} `json:"overrides"`
+	IsActive     *bool                  `json:"is_active"`
 }
 
 type UpdatePositionInput struct {
@@ -111,7 +111,7 @@ func NewContentService(contentRepo repository.ContentRepository, userRepo reposi
 	}
 }
 
-func (s *contentService) CreateContentItem(ctx context.Context, input CreateContentItemInput) (*ContentItemDTO, error){
+func (s *contentService) CreateContentItem(ctx context.Context, input CreateContentItemInput) (*ContentItemDTO, error) {
 	userID, err := uuid.Parse(input.UserID)
 	if err != nil {
 		return nil, api.ErrInvalidInput
@@ -138,7 +138,7 @@ func (s *contentService) CreateContentItem(ctx context.Context, input CreateCont
 
 	if len(input.Overrides) > 0 {
 		overrides.Status = pgtype.Present
-		overrides.Bytes , err = json.Marshal(input.Overrides)
+		overrides.Bytes, err = json.Marshal(input.Overrides)
 		if err != nil {
 			return nil, api.ErrInvalidInput
 		}
@@ -164,9 +164,9 @@ func (s *contentService) CreateContentItem(ctx context.Context, input CreateCont
 		VAlign:       input.VAlign,
 		ContentData:  contentData,
 		Overrides:    overrides,
-		IsActive:     true, 
-	}	
-	
+		IsActive:     true,
+	}
+
 	contentItem, err := s.contentRepo.CreateContentItem(ctx, params)
 	if err != nil {
 		if errors.Is(err, repository.ErrDuplicateKey) {
@@ -193,7 +193,7 @@ func (s *contentService) GetContentItem(ctx context.Context, itemIDStr string) (
 	return mapContentItemToDTO(contentItem), nil
 }
 
-func (s *contentService) GetUserContentItems(ctx context.Context, userIDStr string)([]*ContentItemDTO, error) {
+func (s *contentService) GetUserContentItems(ctx context.Context, userIDStr string) ([]*ContentItemDTO, error) {
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
 		return nil, api.ErrInvalidInput
@@ -222,22 +222,22 @@ func (s *contentService) GetUserContentItems(ctx context.Context, userIDStr stri
 }
 
 func (s *contentService) UpdateContentItem(ctx context.Context, itemIDStr string, input UpdateContentItemInput) (*ContentItemDTO, error) {
-    itemID, err := uuid.Parse(itemIDStr)
-    if err != nil {
-        return nil, api.ErrInvalidInput
-    }
+	itemID, err := uuid.Parse(itemIDStr)
+	if err != nil {
+		return nil, api.ErrInvalidInput
+	}
 
-    _, err = s.contentRepo.GetContentItem(ctx, itemID)
-    if err != nil {
-        if errors.Is(err, repository.ErrRecordNotFound) {
-            return nil, api.ErrNotFound
-        }
-        return nil, api.ErrInternalServer
-    }
+	_, err = s.contentRepo.GetContentItem(ctx, itemID)
+	if err != nil {
+		if errors.Is(err, repository.ErrRecordNotFound) {
+			return nil, api.ErrNotFound
+		}
+		return nil, api.ErrInternalServer
+	}
 
-    var contentData, overrides *pgtype.JSONB
-    
-    if len(input.ContentData) > 0 {
+	var contentData, overrides *pgtype.JSONB
+
+	if len(input.ContentData) > 0 {
 		var cData pgtype.JSONB
 		cData.Status = pgtype.Present
 		cData.Bytes, err = json.Marshal(input.ContentData)
@@ -246,8 +246,8 @@ func (s *contentService) UpdateContentItem(ctx context.Context, itemIDStr string
 		}
 		contentData = &cData
 	}
-	
-    if len(input.Overrides) > 0 {
+
+	if len(input.Overrides) > 0 {
 		var oData pgtype.JSONB
 		oData.Status = pgtype.Present
 		oData.Bytes, err = json.Marshal(input.Overrides)
@@ -257,32 +257,32 @@ func (s *contentService) UpdateContentItem(ctx context.Context, itemIDStr string
 		overrides = &oData
 	}
 
-    params := repository.UpdateContentItemParams{
-        ItemID:       itemID,
-        Title:        input.Title,
-        Href:         input.Href,
-        URL:          input.URL,
-        MediaType:    input.MediaType,
-        DesktopStyle: input.DesktopStyle,
-        MobileStyle:  input.MobileStyle,
-        HAlign:       input.HAlign,
-        VAlign:       input.VAlign,
-        ContentData:  contentData,
-        Overrides:    overrides,
-        IsActive:     input.IsActive,
-    }
+	params := repository.UpdateContentItemParams{
+		ItemID:       itemID,
+		Title:        input.Title,
+		Href:         input.Href,
+		URL:          input.URL,
+		MediaType:    input.MediaType,
+		DesktopStyle: input.DesktopStyle,
+		MobileStyle:  input.MobileStyle,
+		HAlign:       input.HAlign,
+		VAlign:       input.VAlign,
+		ContentData:  contentData,
+		Overrides:    overrides,
+		IsActive:     input.IsActive,
+	}
 
-    err = s.contentRepo.UpdateContentItem(ctx, params)
-    if err != nil {
-        return nil, api.ErrInternalServer
-    }
+	err = s.contentRepo.UpdateContentItem(ctx, params)
+	if err != nil {
+		return nil, api.ErrInternalServer
+	}
 
-    updatedItem, err := s.contentRepo.GetContentItem(ctx, itemID)
-    if err != nil {
-        return nil, api.ErrInternalServer
-    }
+	updatedItem, err := s.contentRepo.GetContentItem(ctx, itemID)
+	if err != nil {
+		return nil, api.ErrInternalServer
+	}
 
-    return mapContentItemToDTO(updatedItem), nil
+	return mapContentItemToDTO(updatedItem), nil
 }
 
 func (s *contentService) UpdateContentItemPosition(ctx context.Context, itemIDStr string, input UpdatePositionInput) (*ContentItemDTO, error) {
@@ -300,11 +300,11 @@ func (s *contentService) UpdateContentItemPosition(ctx context.Context, itemIDSt
 	}
 
 	params := repository.UpdatePositionParams{
-		ItemID:    itemID,
-		DesktopX:  input.DesktopX,
-		DesktopY:  input.DesktopY,
-		MobileX:   input.MobileX,
-		MobileY:   input.MobileY,
+		ItemID:   itemID,
+		DesktopX: input.DesktopX,
+		DesktopY: input.DesktopY,
+		MobileX:  input.MobileX,
+		MobileY:  input.MobileY,
 	}
 
 	err = s.contentRepo.UpdateContentItemPosition(ctx, params)

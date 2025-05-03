@@ -29,16 +29,16 @@ func (m *PgxTxManager) WithTransaction(ctx context.Context, fn func(context.Cont
 	if err != nil {
 		return errors.Wrap(err, "failed to begin transaction")
 	}
-	
+
 	defer func() {
 		if p := recover(); p != nil {
 			_ = tx.Rollback(ctx)
-			panic(p) 
+			panic(p)
 		}
 	}()
-	
+
 	txCtx := context.WithValue(ctx, txContextKey, tx)
-	
+
 	if err := fn(txCtx); err != nil {
 		if rbErr := tx.Rollback(ctx); rbErr != nil {
 			return errors.Wrap(rbErr, "rollback failed: "+err.Error())
@@ -48,7 +48,7 @@ func (m *PgxTxManager) WithTransaction(ctx context.Context, fn func(context.Cont
 	if err := tx.Commit(ctx); err != nil {
 		return errors.Wrap(err, "failed to commit transaction")
 	}
-	
+
 	return nil
 }
 
