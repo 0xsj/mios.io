@@ -2,24 +2,15 @@ package repository
 
 import (
 	"context"
-	"errors"
 
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
+	apperror "github.com/0xsj/gin-sqlc/pkg/errors"
+	"github.com/0xsj/gin-sqlc/pkg/ptr"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 )
 
-var (
-	ErrRecordNotFound = errors.New("record not found")
-	ErrDuplicateKey   = errors.New("duplicate key violation")
-	ErrDatabase       = errors.New("database error")
 
-	ErrInvalidInput        = errors.New("invalid input parameters")
-	ErrPermissionDenied    = errors.New("permission denied for operation")
-	ErrForeignKeyViolation = errors.New("foreign key constraint violation")
-	ErrTransactionFailed   = errors.New("database transaction failed")
-	ErrConnectionFailed    = errors.New("database connection failed")
-)
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (*db.User, error)
@@ -62,6 +53,13 @@ type UpdateUserParams struct {
 	CustomDomain    string
 }
 
+const (
+	PgErrUniqueViolation     = "23505"
+	PgErrForeignKeyViolation = "23503"
+	PgErrCheckViolation      = "23514"
+)
+
+
 type SQLCUserRepository struct {
 	db *db.Queries
 }
@@ -73,73 +71,33 @@ func NewUserRepository(db *db.Queries) UserRepository {
 }
 
 func (r *SQLCUserRepository) CreateUser(ctx context.Context, arg CreateUserParams) (*db.User, error) {
-	var firstNamePtr, lastNamePtr, bioPtr, profileImageURLPtr *string
-	var layoutVersionPtr, customDomainPtr *string
-	var isPremiumPtr, isAdminPtr, onboardedPtr *bool
-
-	if arg.FirstName != "" {
-		firstNameCopy := arg.FirstName
-		firstNamePtr = &firstNameCopy
-	}
-
-	if arg.LastName != "" {
-		lastNameCopy := arg.LastName
-		lastNamePtr = &lastNameCopy
-	}
-
-	if arg.Bio != "" {
-		bioCopy := arg.Bio
-		bioPtr = &bioCopy
-	}
-
-	if arg.ProfileImageURL != "" {
-		profileCopy := arg.ProfileImageURL
-		profileImageURLPtr = &profileCopy
-	}
-
-	if arg.LayoutVersion != "" {
-		layoutCopy := arg.LayoutVersion
-		layoutVersionPtr = &layoutCopy
-	}
-
-	if arg.CustomDomain != "" {
-		domainCopy := arg.CustomDomain
-		customDomainPtr = &domainCopy
-	}
-
-	isPremiumCopy := arg.IsPremium
-	isPremiumPtr = &isPremiumCopy
-
-	isAdminCopy := arg.IsAdmin
-	isAdminPtr = &isAdminCopy
-
-	onboardedCopy := arg.Onboarded
-	onboardedPtr = &onboardedCopy
-
 	params := db.CreateUserParams{
 		Username:        arg.Username,
 		Handle:          arg.Handle,
 		Email:           arg.Email,
-		FirstName:       firstNamePtr,
-		LastName:        lastNamePtr,
-		Bio:             bioPtr,
-		ProfileImageUrl: profileImageURLPtr,
-		LayoutVersion:   layoutVersionPtr,
-		CustomDomain:    customDomainPtr,
-		IsPremium:       isPremiumPtr,
-		IsAdmin:         isAdminPtr,
-		Onboarded:       onboardedPtr,
+		FirstName:       ptr.String(arg.FirstName),
+		LastName:        ptr.String(arg.LastName),
+		Bio:             ptr.String(arg.Bio),
+		ProfileImageUrl: ptr.String(arg.ProfileImageURL),
+		LayoutVersion:   ptr.String(arg.LayoutVersion),
+		CustomDomain:    ptr.String(arg.CustomDomain),
+		IsPremium:       ptr.Bool(arg.IsPremium),
+		IsAdmin:         ptr.Bool(arg.IsAdmin),
+		Onboarded:       ptr.Bool(arg.Onboarded),
 	}
 
 	user, err := r.db.CreateUser(ctx, params)
 	if err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
-			if pgErr.Code == "23505" {
-				return nil, ErrDuplicateKey
+			switch pgErr.Code {
+			case apperror.PgErrUniqueViolation:
+				return nil, apperror.NewConflictError("User already exists", err)
+			case apperror.PgErrForeignKeyViolation:
+				return nil, apperror.NewConflictError("Invalid reference to related entity", err)
 			}
 		}
-		return nil, ErrDatabase
+		return nil, apperror.NewDatabaseError("failed to create user", err)
 	}
 
 	return user, nil
