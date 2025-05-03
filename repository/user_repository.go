@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
+	"github.com/0xsj/gin-sqlc/log"
 	apperror "github.com/0xsj/gin-sqlc/pkg/errors"
 	"github.com/0xsj/gin-sqlc/pkg/ptr"
 	"github.com/google/uuid"
@@ -61,15 +63,18 @@ const (
 
 type SQLCUserRepository struct {
 	db *db.Queries
+	logger log.Logger
 }
 
-func NewUserRepository(db *db.Queries) UserRepository {
+func NewUserRepository(db *db.Queries, logger log.Logger) UserRepository {
 	return &SQLCUserRepository{
 		db: db,
+		logger: logger,
 	}
 }
 
 func (r *SQLCUserRepository) CreateUser(ctx context.Context, arg CreateUserParams) (*db.User, error) {
+	r.logger.Infof("Creating user with username: %s, email: %s", arg.Username, arg.Email)
 	params := db.CreateUserParams{
 		Username:        arg.Username,
 		Handle:          arg.Handle,
@@ -89,11 +94,18 @@ func (r *SQLCUserRepository) CreateUser(ctx context.Context, arg CreateUserParam
 		return nil, apperror.NewValidationError("username and email are required", nil)
 	}
 
-	user, err := r.db.CreateUser(ctx, params)
+	start := time.Now()
+    user, err := r.db.CreateUser(ctx, params)
+    duration := time.Since(start)
+
 	if err != nil {
-		return nil, apperror.HandleDBError(err, "user")
-	}
-	return user, nil
+        appErr := apperror.HandleDBError(err, "user")        
+        appErr.Log(r.logger)
+        
+        return nil, appErr
+    }
+	r.logger.Infof("User created successfully in %v: %s", duration, user.UserID)
+    return user, nil
 }
 
 func (r *SQLCUserRepository) GetUser(ctx context.Context, userID uuid.UUID) (*db.User, error) {
@@ -188,50 +200,47 @@ func (r *SQLCUserRepository) UpdateEmail(ctx context.Context, userID uuid.UUID, 
 }
 
 func (r *SQLCUserRepository) UpdatePremiumStatus(ctx context.Context, userID uuid.UUID, isPremium bool) error {
-	params := db.UpdateUserPremiumStatusParams{
-		UserID:    userID,
-		IsPremium: &isPremium,
-	}
+    params := db.UpdateUserPremiumStatusParams{
+        UserID:    userID,
+        IsPremium: ptr.Bool(isPremium),
+    }
 
-	err := r.db.UpdateUserPremiumStatus(ctx, params)
-	if err != nil {
-		return ErrDatabase
-	}
-	return nil
+    err := r.db.UpdateUserPremiumStatus(ctx, params)
+    if err != nil {
+        return apperror.HandleDBError(err, "user")
+    }
+    return nil
 }
-
 func (r *SQLCUserRepository) UpdateAdminStatus(ctx context.Context, userID uuid.UUID, isAdmin bool) error {
-	params := db.UpdateUserAdminStatusParams{
-		UserID:  userID,
-		IsAdmin: &isAdmin,
-	}
+    params := db.UpdateUserAdminStatusParams{
+        UserID:  userID,
+        IsAdmin: ptr.Bool(isAdmin),
+    }
 
-	err := r.db.UpdateUserAdminStatus(ctx, params)
-	if err != nil {
-		return ErrDatabase
-	}
-	return nil
+    err := r.db.UpdateUserAdminStatus(ctx, params)
+    if err != nil {
+        return apperror.HandleDBError(err, "user")
+    }
+    return nil
 }
 
 func (r *SQLCUserRepository) UpdateOnboardedStatus(ctx context.Context, userID uuid.UUID, onboarded bool) error {
-	params := db.UpdateUserOnboardedStatusParams{
-		UserID:    userID,
-		Onboarded: &onboarded,
-	}
+    params := db.UpdateUserOnboardedStatusParams{
+        UserID:    userID,
+        Onboarded: ptr.Bool(onboarded),
+    }
 
-	err := r.db.UpdateUserOnboardedStatus(ctx, params)
-	if err != nil {
-		return ErrDatabase
-	}
-
-	return nil
+    err := r.db.UpdateUserOnboardedStatus(ctx, params)
+    if err != nil {
+        return apperror.HandleDBError(err, "user")
+    }
+    return nil
 }
 
 func (r *SQLCUserRepository) DeleteUser(ctx context.Context, userID uuid.UUID) error {
-	err := r.db.DeleteUser(ctx, userID)
-	if err != nil {
-		return ErrDatabase
-	}
-
-	return nil
+    err := r.db.DeleteUser(ctx, userID)
+    if err != nil {
+        return apperror.HandleDBError(err, "user")
+    }
+    return nil
 }
