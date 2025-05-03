@@ -132,13 +132,12 @@ func (s *userService) CreateUser(ctx context.Context, input CreateUserInput) (*U
 
 	if err != nil {
 		s.logger.Errorf("Failed to create user: %v", err)
-		return nil, err 
+		return nil, err
 	}
 
 	s.logger.Infof("User created successfully in %v: %s", duration, user.UserID)
 	return mapUserToDTO(user), nil
 }
-
 
 func (s *userService) GetUser(ctx context.Context, id string) (*UserDTO, error) {
 	s.logger.Debugf("Getting user by ID: %s", id)
@@ -170,7 +169,7 @@ func (s *userService) GetUserByUsername(ctx context.Context, username string) (*
 
 	if err != nil {
 		s.logger.Errorf("Failed to get user by username %s: %v", username, err)
-		return nil, err 
+		return nil, err
 	}
 
 	s.logger.Debugf("Retrieved user by username %s in %v", username, duration)
@@ -202,7 +201,7 @@ func (s *userService) GetUserByEmail(ctx context.Context, email string) (*UserDT
 
 	if err != nil {
 		s.logger.Errorf("Failed to get user by email %s: %v", email, err)
-		return nil, err 
+		return nil, err
 	}
 
 	s.logger.Debugf("Retrieved user by email %s in %v", email, duration)
@@ -217,15 +216,13 @@ func (s *userService) UpdateUser(ctx context.Context, id string, input UpdateUse
 		return nil, err
 	}
 
-	// First get the current user to check for existence
 	start := time.Now()
 	currentUser, err := s.userRepo.GetUser(ctx, userID)
 	if err != nil {
 		s.logger.Errorf("Failed to get user for update with ID %s: %v", id, err)
-		return nil, err // Repository already returns appropriate app errors
+		return nil, err
 	}
 
-	// Update user's basic details
 	params := repository.UpdateUserParams{
 		UserID:          userID,
 		FirstName:       getValueOrEmpty(input.FirstName),
@@ -239,10 +236,9 @@ func (s *userService) UpdateUser(ctx context.Context, id string, input UpdateUse
 	err = s.userRepo.UpdateUser(ctx, params)
 	if err != nil {
 		s.logger.Errorf("Failed to update user details with ID %s: %v", id, err)
-		return nil, err // Repository already returns appropriate app errors
+		return nil, err
 	}
 
-	// Update username if provided and different
 	if input.Username != nil && *input.Username != currentUser.Username {
 		if !isValidUsername(*input.Username) {
 			return nil, handleValidationError("Invalid username format", nil)
@@ -251,11 +247,10 @@ func (s *userService) UpdateUser(ctx context.Context, id string, input UpdateUse
 		err = s.userRepo.UpdateUsername(ctx, userID, *input.Username)
 		if err != nil {
 			s.logger.Errorf("Failed to update username for user ID %s: %v", id, err)
-			return nil, err // Repository already returns appropriate app errors
+			return nil, err
 		}
 	}
 
-	// Update email if provided and different
 	if input.Email != nil && *input.Email != currentUser.Email {
 		if !isValidEmail(*input.Email) {
 			return nil, handleValidationError("Invalid email format", nil)
@@ -264,11 +259,10 @@ func (s *userService) UpdateUser(ctx context.Context, id string, input UpdateUse
 		err = s.userRepo.UpdateEmail(ctx, userID, *input.Email)
 		if err != nil {
 			s.logger.Errorf("Failed to update email for user ID %s: %v", id, err)
-			return nil, err // Repository already returns appropriate app errors
+			return nil, err
 		}
 	}
 
-	// Get the updated user
 	updatedUser, err := s.userRepo.GetUser(ctx, userID)
 	if err != nil {
 		s.logger.Errorf("Failed to get updated user with ID %s: %v", id, err)
@@ -296,10 +290,9 @@ func (s *userService) UpdateHandle(ctx context.Context, id string, handle string
 	err = s.userRepo.UpdateHandle(ctx, userID, handle)
 	if err != nil {
 		s.logger.Errorf("Failed to update handle for user ID %s: %v", id, err)
-		return nil, err // Repository already returns appropriate app errors
+		return nil, err
 	}
 
-	// Get the updated user
 	updatedUser, err := s.userRepo.GetUser(ctx, userID)
 	if err != nil {
 		s.logger.Errorf("Failed to get updated user with ID %s: %v", id, err)
@@ -323,10 +316,9 @@ func (s *userService) UpdatePremiumStatus(ctx context.Context, id string, isPrem
 	err = s.userRepo.UpdatePremiumStatus(ctx, userID, isPremium)
 	if err != nil {
 		s.logger.Errorf("Failed to update premium status for user ID %s: %v", id, err)
-		return nil, err // Repository already returns appropriate app errors
+		return nil, err
 	}
 
-	// Get the updated user
 	updatedUser, err := s.userRepo.GetUser(ctx, userID)
 	if err != nil {
 		s.logger.Errorf("Failed to get updated user with ID %s: %v", id, err)
@@ -350,10 +342,9 @@ func (s *userService) UpdateAdminStatus(ctx context.Context, id string, isAdmin 
 	err = s.userRepo.UpdateAdminStatus(ctx, userID, isAdmin)
 	if err != nil {
 		s.logger.Errorf("Failed to update admin status for user ID %s: %v", id, err)
-		return nil, err // Repository already returns appropriate app errors
+		return nil, err
 	}
 
-	// Get the updated user
 	updatedUser, err := s.userRepo.GetUser(ctx, userID)
 	if err != nil {
 		s.logger.Errorf("Failed to get updated user with ID %s: %v", id, err)
@@ -377,10 +368,9 @@ func (s *userService) UpdateOnboardedStatus(ctx context.Context, id string, onbo
 	err = s.userRepo.UpdateOnboardedStatus(ctx, userID, onboarded)
 	if err != nil {
 		s.logger.Errorf("Failed to update onboarded status for user ID %s: %v", id, err)
-		return nil, err // Repository already returns appropriate app errors
+		return nil, err
 	}
 
-	// Get the updated user
 	updatedUser, err := s.userRepo.GetUser(ctx, userID)
 	if err != nil {
 		s.logger.Errorf("Failed to get updated user with ID %s: %v", id, err)
@@ -400,18 +390,17 @@ func (s *userService) DeleteUser(ctx context.Context, id string) error {
 		return err
 	}
 
-	// First check if the user exists
 	_, err = s.userRepo.GetUser(ctx, userID)
 	if err != nil {
 		s.logger.Errorf("Failed to find user for deletion with ID %s: %v", id, err)
-		return err // Repository already returns appropriate app errors
+		return err
 	}
 
 	start := time.Now()
 	err = s.userRepo.DeleteUser(ctx, userID)
 	if err != nil {
 		s.logger.Errorf("Failed to delete user with ID %s: %v", id, err)
-		return err // Repository already returns appropriate app errors
+		return err
 	}
 
 	duration := time.Since(start)
@@ -493,8 +482,8 @@ func isValidEmail(email string) bool {
 }
 
 func getValueOrEmpty(ptr *string) string {
-    if ptr == nil {
-        return ""
-    }
-    return *ptr
+	if ptr == nil {
+		return ""
+	}
+	return *ptr
 }
