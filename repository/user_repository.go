@@ -338,9 +338,18 @@ func (r *SQLCUserRepository) UpdateOnboardedStatus(ctx context.Context, userID u
 }
 
 func (r *SQLCUserRepository) DeleteUser(ctx context.Context, userID uuid.UUID) error {
+    r.logger.Warnf("Deleting user with ID: %s", userID)
+    
+    start := time.Now()
     err := r.db.DeleteUser(ctx, userID)
+    duration := time.Since(start)
+    
     if err != nil {
-        return apperror.HandleDBError(err, "user")
+        appErr := apperror.HandleDBError(err, "user")
+        appErr.Log(r.logger)
+        return appErr
     }
+    
+    r.logger.Warnf("Deleted user with ID: %s in %v", userID, duration)
     return nil
 }
