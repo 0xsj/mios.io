@@ -21,6 +21,7 @@ coverage.html
 go.work
 
 # Environment variables
+dev.env
 .env
 *.env
 !example.env

@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
-	"github.com/0xsj/gin-sqlc/api"
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
+	"github.com/0xsj/gin-sqlc/log"
+	"github.com/0xsj/gin-sqlc/pkg/errors"
 	"github.com/0xsj/gin-sqlc/repository"
 	"github.com/google/uuid"
 )
@@ -147,47 +147,58 @@ type analyticsService struct {
 	analyticsRepo repository.AnalyticsRepository
 	contentRepo   repository.ContentRepository
 	userRepo      repository.UserRepository
+	logger        log.Logger
 }
 
 func NewAnalyticsService(
 	analyticsRepo repository.AnalyticsRepository,
 	contentRepo repository.ContentRepository,
 	userRepo repository.UserRepository,
+	logger log.Logger,
 ) AnalyticsService {
 	return &analyticsService{
 		analyticsRepo: analyticsRepo,
 		contentRepo:   contentRepo,
 		userRepo:      userRepo,
+		logger:        logger,
 	}
 }
 
 func (s *analyticsService) RecordClick(ctx context.Context, input RecordClickInput) error {
+	s.logger.Infof("Recording click for item ID: %s from user ID: %s", input.ItemID, input.UserID)
+
 	itemID, err := uuid.Parse(input.ItemID)
 	if err != nil {
-		return api.ErrInvalidInput
+		s.logger.Warnf("Invalid item ID format: %v", err)
+		return errors.NewBadRequestError("Invalid item ID format", err)
 	}
 
 	userID, err := uuid.Parse(input.UserID)
 	if err != nil {
-		return api.ErrInvalidInput
+		s.logger.Warnf("Invalid user ID format: %v", err)
+		return errors.NewBadRequestError("Invalid user ID format", err)
 	}
 
 	// Verify content item exists
 	_, err = s.contentRepo.GetContentItem(ctx, itemID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return api.ErrNotFound
+		if errors.IsNotFound(err) {
+			s.logger.Warnf("Content item not found with ID: %s", input.ItemID)
+			return errors.NewNotFoundError("Content item not found", err)
 		}
-		return api.ErrInternalServer
+		s.logger.Errorf("Error retrieving content item: %v", err)
+		return errors.Wrap(err, "Failed to retrieve content item")
 	}
 
 	// Verify user exists
 	_, err = s.userRepo.GetUser(ctx, userID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return api.ErrNotFound
+		if errors.IsNotFound(err) {
+			s.logger.Warnf("User not found with ID: %s", input.UserID)
+			return errors.NewNotFoundError("User not found", err)
 		}
-		return api.ErrInternalServer
+		s.logger.Errorf("Error retrieving user: %v", err)
+		return errors.Wrap(err, "Failed to retrieve user")
 	}
 
 	params := repository.CreateAnalyticsParams{
@@ -200,39 +211,49 @@ func (s *analyticsService) RecordClick(ctx context.Context, input RecordClickInp
 
 	_, err = s.analyticsRepo.CreateAnalyticsEntry(ctx, params)
 	if err != nil {
-		return api.ErrInternalServer
+		s.logger.Errorf("Failed to create analytics entry: %v", err)
+		return errors.Wrap(err, "Failed to record click")
 	}
 
+	s.logger.Infof("Click recorded successfully for item ID: %s from user ID: %s", input.ItemID, input.UserID)
 	return nil
 }
 
 func (s *analyticsService) RecordPageView(ctx context.Context, input RecordPageViewInput) error {
+	s.logger.Infof("Recording page view for profile ID: %s by user ID: %s", input.ProfileID, input.UserID)
+
 	profileID, err := uuid.Parse(input.ProfileID)
 	if err != nil {
-		return api.ErrInvalidInput
+		s.logger.Warnf("Invalid profile ID format: %v", err)
+		return errors.NewBadRequestError("Invalid profile ID format", err)
 	}
 
 	userID, err := uuid.Parse(input.UserID)
 	if err != nil {
-		return api.ErrInvalidInput
+		s.logger.Warnf("Invalid user ID format: %v", err)
+		return errors.NewBadRequestError("Invalid user ID format", err)
 	}
 
 	// Verify profile (content item) exists
 	_, err = s.contentRepo.GetContentItem(ctx, profileID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return api.ErrNotFound
+		if errors.IsNotFound(err) {
+			s.logger.Warnf("Profile not found with ID: %s", input.ProfileID)
+			return errors.NewNotFoundError("Profile not found", err)
 		}
-		return api.ErrInternalServer
+		s.logger.Errorf("Error retrieving profile: %v", err)
+		return errors.Wrap(err, "Failed to retrieve profile")
 	}
 
 	// Verify user exists
 	_, err = s.userRepo.GetUser(ctx, userID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return api.ErrNotFound
+		if errors.IsNotFound(err) {
+			s.logger.Warnf("User not found with ID: %s", input.UserID)
+			return errors.NewNotFoundError("User not found", err)
 		}
-		return api.ErrInternalServer
+		s.logger.Errorf("Error retrieving user: %v", err)
+		return errors.Wrap(err, "Failed to retrieve user")
 	}
 
 	params := repository.CreatePageViewParams{
@@ -245,16 +266,21 @@ func (s *analyticsService) RecordPageView(ctx context.Context, input RecordPageV
 
 	_, err = s.analyticsRepo.CreatePageViewEntry(ctx, params)
 	if err != nil {
-		return api.ErrInternalServer
+		s.logger.Errorf("Failed to create page view entry: %v", err)
+		return errors.Wrap(err, "Failed to record page view")
 	}
 
+	s.logger.Infof("Page view recorded successfully for profile ID: %s by user ID: %s", input.ProfileID, input.UserID)
 	return nil
 }
 
 func (s *analyticsService) GetContentItemAnalytics(ctx context.Context, itemIDStr string, page, pageSize int) (*ContentItemAnalyticsDTO, error) {
+	s.logger.Debugf("Getting content item analytics for item ID: %s (page: %d, size: %d)", itemIDStr, page, pageSize)
+
 	itemID, err := uuid.Parse(itemIDStr)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid item ID format: %v", err)
+		return nil, errors.NewBadRequestError("Invalid item ID format", err)
 	}
 
 	// Set default pagination values
@@ -270,22 +296,26 @@ func (s *analyticsService) GetContentItemAnalytics(ctx context.Context, itemIDSt
 	// Verify content item exists
 	_, err = s.contentRepo.GetContentItem(ctx, itemID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
+		if errors.IsNotFound(err) {
+			s.logger.Warnf("Content item not found with ID: %s", itemIDStr)
+			return nil, errors.NewNotFoundError("Content item not found", err)
 		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Error retrieving content item: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve content item")
 	}
 
 	// Get click count
 	totalClicks, err := s.analyticsRepo.GetContentItemClickCount(ctx, itemID)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get click count: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve click count")
 	}
 
 	// Get analytics entries
 	entries, err := s.analyticsRepo.GetItemAnalytics(ctx, itemID, pageSize, offset)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get analytics entries: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve analytics data")
 	}
 
 	// Map to DTOs
@@ -294,6 +324,7 @@ func (s *analyticsService) GetContentItemAnalytics(ctx context.Context, itemIDSt
 		clickData[i] = mapAnalyticToDTO(entry)
 	}
 
+	s.logger.Debugf("Retrieved %d analytics entries for item ID: %s with total clicks: %d", len(clickData), itemIDStr, totalClicks)
 	return &ContentItemAnalyticsDTO{
 		ItemID:      itemIDStr,
 		TotalClicks: totalClicks,
@@ -302,9 +333,12 @@ func (s *analyticsService) GetContentItemAnalytics(ctx context.Context, itemIDSt
 }
 
 func (s *analyticsService) GetUserAnalytics(ctx context.Context, userIDStr string, page, pageSize int) (*UserAnalyticsDTO, error) {
+	s.logger.Debugf("Getting user analytics for user ID: %s (page: %d, size: %d)", userIDStr, page, pageSize)
+
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid user ID format: %v", err)
+		return nil, errors.NewBadRequestError("Invalid user ID format", err)
 	}
 
 	// Set default pagination values
@@ -320,22 +354,26 @@ func (s *analyticsService) GetUserAnalytics(ctx context.Context, userIDStr strin
 	// Verify user exists
 	_, err = s.userRepo.GetUser(ctx, userID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
+		if errors.IsNotFound(err) {
+			s.logger.Warnf("User not found with ID: %s", userIDStr)
+			return nil, errors.NewNotFoundError("User not found", err)
 		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Error retrieving user: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve user")
 	}
 
 	// Get click count
 	totalClicks, err := s.analyticsRepo.GetUserItemClickCount(ctx, userID)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get click count: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve click count")
 	}
 
 	// Get analytics entries
 	entries, err := s.analyticsRepo.GetUserAnalytics(ctx, userID, pageSize, offset)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get analytics entries: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve analytics data")
 	}
 
 	// Map to DTOs
@@ -344,6 +382,7 @@ func (s *analyticsService) GetUserAnalytics(ctx context.Context, userIDStr strin
 		clickData[i] = mapAnalyticToDTO(entry)
 	}
 
+	s.logger.Debugf("Retrieved %d analytics entries for user ID: %s with total clicks: %d", len(clickData), userIDStr, totalClicks)
 	return &UserAnalyticsDTO{
 		UserID:      userIDStr,
 		TotalClicks: totalClicks,
@@ -352,29 +391,37 @@ func (s *analyticsService) GetUserAnalytics(ctx context.Context, userIDStr strin
 }
 
 func (s *analyticsService) GetUserAnalyticsByTimeRange(ctx context.Context, userIDStr string, input TimeRangeInput) (*TimeRangeAnalyticsDTO, error) {
+	s.logger.Debugf("Getting user analytics by time range for user ID: %s from %s to %s", 
+		userIDStr, input.StartDate, input.EndDate)
+
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid user ID format: %v", err)
+		return nil, errors.NewBadRequestError("Invalid user ID format", err)
 	}
 
 	// Parse date strings to time.Time
 	startDate, err := time.Parse(time.RFC3339, input.StartDate)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid start date format: %v", err)
+		return nil, errors.NewValidationError("Invalid start date format, expected RFC3339", err)
 	}
 
 	endDate, err := time.Parse(time.RFC3339, input.EndDate)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid end date format: %v", err)
+		return nil, errors.NewValidationError("Invalid end date format, expected RFC3339", err)
 	}
 
 	// Verify user exists
 	_, err = s.userRepo.GetUser(ctx, userID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
+		if errors.IsNotFound(err) {
+			s.logger.Warnf("User not found with ID: %s", userIDStr)
+			return nil, errors.NewNotFoundError("User not found", err)
 		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Error retrieving user: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve user")
 	}
 
 	// Get daily analytics
@@ -386,7 +433,8 @@ func (s *analyticsService) GetUserAnalyticsByTimeRange(ctx context.Context, user
 
 	dailyAnalytics, err := s.analyticsRepo.GetUserAnalyticsByTimeRange(ctx, params)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get daily analytics: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve analytics data")
 	}
 
 	// Calculate total clicks
@@ -402,6 +450,9 @@ func (s *analyticsService) GetUserAnalyticsByTimeRange(ctx context.Context, user
 		}
 	}
 
+	s.logger.Debugf("Retrieved %d days of analytics for user ID: %s with total clicks: %d", 
+		len(dailyClicks), userIDStr, totalClicks)
+	
 	return &TimeRangeAnalyticsDTO{
 		UserID:      userIDStr,
 		StartDate:   input.StartDate,
@@ -412,29 +463,37 @@ func (s *analyticsService) GetUserAnalyticsByTimeRange(ctx context.Context, user
 }
 
 func (s *analyticsService) GetItemAnalyticsByTimeRange(ctx context.Context, itemIDStr string, input TimeRangeInput) (*ItemTimeRangeAnalyticsDTO, error) {
+	s.logger.Debugf("Getting item analytics by time range for item ID: %s from %s to %s", 
+		itemIDStr, input.StartDate, input.EndDate)
+
 	itemID, err := uuid.Parse(itemIDStr)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid item ID format: %v", err)
+		return nil, errors.NewBadRequestError("Invalid item ID format", err)
 	}
 
 	// Parse date strings to time.Time
 	startDate, err := time.Parse(time.RFC3339, input.StartDate)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid start date format: %v", err)
+		return nil, errors.NewValidationError("Invalid start date format, expected RFC3339", err)
 	}
 
 	endDate, err := time.Parse(time.RFC3339, input.EndDate)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid end date format: %v", err)
+		return nil, errors.NewValidationError("Invalid end date format, expected RFC3339", err)
 	}
 
 	// Verify item exists
 	_, err = s.contentRepo.GetContentItem(ctx, itemID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
+		if errors.IsNotFound(err) {
+			s.logger.Warnf("Content item not found with ID: %s", itemIDStr)
+			return nil, errors.NewNotFoundError("Content item not found", err)
 		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Error retrieving content item: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve content item")
 	}
 
 	// Get daily analytics
@@ -446,7 +505,8 @@ func (s *analyticsService) GetItemAnalyticsByTimeRange(ctx context.Context, item
 
 	dailyAnalytics, err := s.analyticsRepo.GetItemAnalyticsByTimeRange(ctx, params)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get daily analytics: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve analytics data")
 	}
 
 	// Calculate total clicks
@@ -462,6 +522,9 @@ func (s *analyticsService) GetItemAnalyticsByTimeRange(ctx context.Context, item
 		}
 	}
 
+	s.logger.Debugf("Retrieved %d days of analytics for item ID: %s with total clicks: %d", 
+		len(dailyClicks), itemIDStr, totalClicks)
+	
 	return &ItemTimeRangeAnalyticsDTO{
 		ItemID:      itemIDStr,
 		StartDate:   input.StartDate,
@@ -472,29 +535,37 @@ func (s *analyticsService) GetItemAnalyticsByTimeRange(ctx context.Context, item
 }
 
 func (s *analyticsService) GetProfilePageViewsByTimeRange(ctx context.Context, userIDStr string, input TimeRangeInput) (*PageViewAnalyticsDTO, error) {
+	s.logger.Debugf("Getting profile page views by time range for user ID: %s from %s to %s", 
+		userIDStr, input.StartDate, input.EndDate)
+
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid user ID format: %v", err)
+		return nil, errors.NewBadRequestError("Invalid user ID format", err)
 	}
 
 	// Parse date strings to time.Time
 	startDate, err := time.Parse(time.RFC3339, input.StartDate)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid start date format: %v", err)
+		return nil, errors.NewValidationError("Invalid start date format, expected RFC3339", err)
 	}
 
 	endDate, err := time.Parse(time.RFC3339, input.EndDate)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid end date format: %v", err)
+		return nil, errors.NewValidationError("Invalid end date format, expected RFC3339", err)
 	}
 
 	// Verify user exists
 	_, err = s.userRepo.GetUser(ctx, userID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
+		if errors.IsNotFound(err) {
+			s.logger.Warnf("User not found with ID: %s", userIDStr)
+			return nil, errors.NewNotFoundError("User not found", err)
 		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Error retrieving user: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve user")
 	}
 
 	// Get page view analytics
@@ -506,7 +577,8 @@ func (s *analyticsService) GetProfilePageViewsByTimeRange(ctx context.Context, u
 
 	dailyViews, err := s.analyticsRepo.GetProfilePageViewsByDate(ctx, params)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get daily page views: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve page view data")
 	}
 
 	// Calculate total views
@@ -522,6 +594,9 @@ func (s *analyticsService) GetProfilePageViewsByTimeRange(ctx context.Context, u
 		}
 	}
 
+	s.logger.Debugf("Retrieved %d days of page views for user ID: %s with total views: %d", 
+		len(views), userIDStr, totalViews)
+	
 	return &PageViewAnalyticsDTO{
 		UserID:     userIDStr,
 		StartDate:  input.StartDate,
@@ -533,9 +608,12 @@ func (s *analyticsService) GetProfilePageViewsByTimeRange(ctx context.Context, u
 
 // Dashboard analytics
 func (s *analyticsService) GetProfileDashboard(ctx context.Context, userIDStr string, days int) (*ProfileDashboardDTO, error) {
+	s.logger.Infof("Getting profile dashboard for user ID: %s over %d days", userIDStr, days)
+
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid user ID format: %v", err)
+		return nil, errors.NewBadRequestError("Invalid user ID format", err)
 	}
 
 	// Set default period if not specified
@@ -550,22 +628,26 @@ func (s *analyticsService) GetProfileDashboard(ctx context.Context, userIDStr st
 	// Verify user exists
 	_, err = s.userRepo.GetUser(ctx, userID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
+		if errors.IsNotFound(err) {
+			s.logger.Warnf("User not found with ID: %s", userIDStr)
+			return nil, errors.NewNotFoundError("User not found", err)
 		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Error retrieving user: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve user")
 	}
 
 	// Get total page views
 	totalViews, err := s.analyticsRepo.GetProfilePageViews(ctx, userID)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get total page views: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve page view count")
 	}
 
 	// Get total clicks
 	totalClicks, err := s.analyticsRepo.GetUserItemClickCount(ctx, userID)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get total clicks: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve click count")
 	}
 
 	// Get unique visitors
@@ -577,19 +659,22 @@ func (s *analyticsService) GetProfileDashboard(ctx context.Context, userIDStr st
 
 	uniqueVisitors, err := s.analyticsRepo.GetUniqueVisitors(ctx, visitorParams)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get unique visitors: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve unique visitor count")
 	}
 
 	// Get daily page views
 	dailyViewsData, err := s.analyticsRepo.GetProfilePageViewsByDate(ctx, visitorParams)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get daily page views: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve daily page views")
 	}
 
 	// Get daily visitors
 	dailyVisitorsData, err := s.analyticsRepo.GetUniqueVisitorsByDay(ctx, visitorParams)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get daily visitors: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve daily visitors")
 	}
 
 	// Get top items
@@ -602,7 +687,8 @@ func (s *analyticsService) GetProfileDashboard(ctx context.Context, userIDStr st
 
 	topItems, err := s.analyticsRepo.GetTopContentItemsByClicks(ctx, topItemsParams)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get top content items: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve top content items")
 	}
 
 	// Get top referrers
@@ -615,7 +701,8 @@ func (s *analyticsService) GetProfileDashboard(ctx context.Context, userIDStr st
 
 	topReferrers, err := s.analyticsRepo.GetReferrerAnalytics(ctx, referrerParams)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get referrer analytics: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve referrer analytics")
 	}
 
 	// Calculate conversion rate
@@ -676,6 +763,9 @@ func (s *analyticsService) GetProfileDashboard(ctx context.Context, userIDStr st
 
 	periodLabel := fmt.Sprintf("Last %d days", days)
 
+	s.logger.Infof("Retrieved dashboard data for user ID: %s with %d views, %d clicks, and %d unique visitors", 
+		userIDStr, totalViews, totalClicks, uniqueVisitors)
+	
 	return &ProfileDashboardDTO{
 		UserID:         userIDStr,
 		Period:         periodLabel,
@@ -692,20 +782,26 @@ func (s *analyticsService) GetProfileDashboard(ctx context.Context, userIDStr st
 
 // Referrer analytics
 func (s *analyticsService) GetReferrerAnalytics(ctx context.Context, userIDStr string, input TimeRangeInput) (*ReferrerAnalyticsDTO, error) {
+	s.logger.Debugf("Getting referrer analytics for user ID: %s from %s to %s", 
+		userIDStr, input.StartDate, input.EndDate)
+
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid user ID format: %v", err)
+		return nil, errors.NewBadRequestError("Invalid user ID format", err)
 	}
 
 	// Parse date strings to time.Time
 	startDate, err := time.Parse(time.RFC3339, input.StartDate)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid start date format: %v", err)
+		return nil, errors.NewValidationError("Invalid start date format, expected RFC3339", err)
 	}
 
 	endDate, err := time.Parse(time.RFC3339, input.EndDate)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid end date format: %v", err)
+		return nil, errors.NewValidationError("Invalid end date format, expected RFC3339", err)
 	}
 
 	// Set default limit if not specified
@@ -717,10 +813,12 @@ func (s *analyticsService) GetReferrerAnalytics(ctx context.Context, userIDStr s
 	// Verify user exists
 	_, err = s.userRepo.GetUser(ctx, userID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
+		if errors.IsNotFound(err) {
+			s.logger.Warnf("User not found with ID: %s", userIDStr)
+			return nil, errors.NewNotFoundError("User not found", err)
 		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Error retrieving user: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve user")
 	}
 
 	// Get referrer stats
@@ -733,7 +831,8 @@ func (s *analyticsService) GetReferrerAnalytics(ctx context.Context, userIDStr s
 
 	referrers, err := s.analyticsRepo.GetReferrerAnalytics(ctx, params)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to get referrer analytics: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve referrer data")
 	}
 
 	// Calculate total count and percentages
@@ -757,6 +856,9 @@ func (s *analyticsService) GetReferrerAnalytics(ctx context.Context, userIDStr s
 		}
 	}
 
+	s.logger.Debugf("Retrieved %d referrers for user ID: %s with total count: %d", 
+		len(referrersDTO), userIDStr, totalCount)
+	
 	return &ReferrerAnalyticsDTO{
 		UserID:     userIDStr,
 		StartDate:  input.StartDate,
