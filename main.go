@@ -88,21 +88,19 @@ func main() {
 	userService := service.NewUserService(userRepo, logger)
 	authService := service.NewAuthService(userRepo, authRepo, cfg.JWTSecret, cfg.GetTokenDuration(), logger)
 	contentService := service.NewContentService(contentRepo, userRepo, logger)
-	analyticsService := service.NewAnalyticsService(analyticsRepo, contentRepo, userRepo)
+	analyticsService := service.NewAnalyticsService(analyticsRepo, contentRepo, userRepo, logger)
 
 	logger.Info("Initializing handlers...")
-	userHandler := user.NewHandler(userService)
+	userHandler := user.NewHandler(userService, logger)
 	authHandler := auth.NewHandler(authService)
-	contentHandler := content.NewHandler(contentService)
+	contentHandler := content.NewHandler(contentService, logger)
 	analyticsHandler := analytics.NewHandler(analyticsService)
 
 	logger.Info("Setting up server...")
 	server := api.NewServer(cfg, queries, logger)
 
-	// Add middleware to the router
 	server.Router().Use(middleware.LoggingMiddleware(logger))
 
-	// Register handlers
 	server.RegisterHandlers(userHandler, authHandler, contentHandler, authService, analyticsHandler)
 
 	logger.Infof("Starting HTTP server on %s:%s...", cfg.Host, cfg.Port)
