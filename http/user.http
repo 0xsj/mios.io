@@ -20,7 +20,7 @@ GET {{baseUrl}}/api/users/{{userId}}
 Authorization: Bearer {{accessToken}}
 
 ### Get User by Username
-GET {{baseUrl}}/api/users/username/tetuser
+GET {{baseUrl}}/api/users/username/testuser
 
 ### Get User by Handle
 GET {{baseUrl}}/api/users/handle/testuser

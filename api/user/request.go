@@ -60,3 +60,10 @@ type UpdateAdminStatusRequest struct {
 type UpdateOnboardedStatusRequest struct {
 	Onboarded bool `json:"onboarded"`
 }
+
+type UserListResponse struct {
+	Users      []UserResponse `json:"users"`
+	TotalCount int64          `json:"total_count"`
+	Page       int            `json:"page"`
+	PageSize   int            `json:"page_size"`
+}

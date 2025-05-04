@@ -21,6 +21,8 @@ type Config struct {
 	JWTSecret         string `mapstructure:"JWT_SECRET"`
 	TokenHourLifespan int    `mapstructure:"TOKEN_HOUR_LIFESPAN"`
 	APISecret         string `mapstructure:"API_SECRET"`
+
+	Version			string `mapstructure:"VERSION"`
 }
 
 func LoadConfig(name string, path string) (config Config) {

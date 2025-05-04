@@ -1,7 +1,6 @@
 package api
 
 import (
-	"net/http"
 	"time"
 
 	"github.com/0xsj/gin-sqlc/api/analytics"
@@ -12,6 +11,7 @@ import (
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
 	"github.com/0xsj/gin-sqlc/log"
 	"github.com/0xsj/gin-sqlc/middleware"
+	"github.com/0xsj/gin-sqlc/pkg/response"
 	"github.com/0xsj/gin-sqlc/service"
 	"github.com/gin-gonic/gin"
 )
@@ -20,23 +20,24 @@ type Server struct {
 	config config.Config
 	router *gin.Engine
 	store  db.Querier
-	log    log.Logger
-	// server *http.Server
+	logger log.Logger
 }
 
-func NewServer(config config.Config, store db.Querier, log log.Logger) *Server {
+func NewServer(config config.Config, store db.Querier, logger log.Logger) *Server {
 	router := gin.New()
-
-	router.Use(gin.Logger())
-	router.Use(gin.Recovery())
+	
+	router.Use(middleware.RequestLogger(logger))
+	router.Use(middleware.Recovery(logger))
+	router.Use(middleware.CORSMiddleware())
 
 	server := &Server{
 		config: config,
 		router: router,
 		store:  store,
-		log:    log,
+		logger: logger,
 	}
 
+	logger.Info("API server initialized successfully")
 	return server
 }
 
@@ -46,13 +47,17 @@ func (s *Server) RegisterHandlers(
 	contentHandler *content.Handler,
 	authService service.AuthService,
 	analyticsHandler *analytics.Handler,
-
 ) {
-	authMiddleware := middleware.AuthMiddleware(authService)
-	adminMiddleware := middleware.AdminMiddleware()
+	s.logger.Info("Registering API routes")
 
+	authMiddleware := middleware.AuthMiddleware(authService, s.logger)
+	adminMiddleware := middleware.AdminMiddleware(s.logger)
+	verifiedEmailMiddleware := middleware.RequireVerifiedEmail(authService, s.logger)
+
+	// Public routes - no authentication required
 	publicRoutes := s.router.Group("/api")
 	{
+		// Auth routes
 		authGroup := publicRoutes.Group("/auth")
 		{
 			authGroup.POST("/register", authHandler.Register)
@@ -63,26 +68,31 @@ func (s *Server) RegisterHandlers(
 			authGroup.POST("/verify-email", authHandler.VerifyEmail)
 		}
 
+		// Public user routes
 		publicUserGroup := publicRoutes.Group("/users")
 		{
 			publicUserGroup.GET("/username/:username", userHandler.GetUserByUsername)
-			publicUserGroup.GET("/handle/:handle", userHandler.GetUserbyHandle)
+			publicUserGroup.GET("/handle/:handle", userHandler.GetUserByHandle) // Fixed function name
 		}
 
+		// Public content routes
 		publicContentGroup := publicRoutes.Group("/content")
 		{
 			publicContentGroup.GET("/user/:user_id", contentHandler.GetUserContentItems)
 		}
 	}
 
+	// Protected routes - require authentication
 	protectedRoutes := s.router.Group("/api")
 	protectedRoutes.Use(authMiddleware)
 	{
+		// Auth routes that require authentication
 		authGroup := protectedRoutes.Group("/auth")
 		{
 			authGroup.POST("/logout", authHandler.Logout)
 		}
 
+		// User routes
 		userGroup := protectedRoutes.Group("/users")
 		{
 			userGroup.GET("/:id", userHandler.GetUser)
@@ -92,15 +102,24 @@ func (s *Server) RegisterHandlers(
 			userGroup.DELETE("/:id", userHandler.DeleteUser)
 		}
 
+		// Content routes 
 		contentGroup := protectedRoutes.Group("/content")
 		{
-			contentGroup.POST("", contentHandler.CreateContentItem)
+			// Some operations might need email verification
+			verifiedContentGroup := contentGroup.Group("")
+			verifiedContentGroup.Use(verifiedEmailMiddleware)
+			{
+				verifiedContentGroup.POST("", contentHandler.CreateContentItem)
+				verifiedContentGroup.PUT("/:id", contentHandler.UpdateContentItem)
+				verifiedContentGroup.PATCH("/:id/position", contentHandler.UpdateContentItemPosition)
+				verifiedContentGroup.DELETE("/:id", contentHandler.DeleteContentItem)
+			}
+			
+			// Some operations might not need email verification
 			contentGroup.GET("/:id", contentHandler.GetContentItem)
-			contentGroup.PUT("/:id", contentHandler.UpdateContentItem)
-			contentGroup.PATCH("/:id/position", contentHandler.UpdateContentItemPosition)
-			contentGroup.DELETE("/:id", contentHandler.DeleteContentItem)
 		}
 
+		// Analytics routes
 		analyticsGroup := protectedRoutes.Group("/analytics")
 		{
 			analyticsGroup.POST("/clicks", analyticsHandler.RecordClick)
@@ -115,32 +134,47 @@ func (s *Server) RegisterHandlers(
 		}
 	}
 
-	// Admin routes
+	// Admin routes - require authentication and admin role
 	adminRoutes := protectedRoutes.Group("/admin")
 	adminRoutes.Use(adminMiddleware)
 	{
 		adminRoutes.PATCH("/users/:id/premium", userHandler.UpdatePremiumStatus)
-		adminRoutes.PATCH("/users/:id/admin", userHandler.UpdateAdminstatus)
-
+		adminRoutes.PATCH("/users/:id/admin", userHandler.UpdateAdminStatus) // Fixed function name
 	}
 
-	s.router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-			"time":   time.Now().Format(time.RFC3339),
-		})
-	})
+	// Health check endpoint
+	s.router.GET("/health", s.handleHealthCheck)
+
+	s.logger.Info("API routes registered successfully")
 }
 
-func (s *Server) MountHandlers() {
-	api := s.router.Group("/api")
-	api.POST("/users")
+// handleHealthCheck handles the health check endpoint
+func (s *Server) handleHealthCheck(c *gin.Context) {
+	s.logger.Debug("Health check endpoint called")
+	
+	// Gather system health information
+	healthInfo := map[string]interface{}{
+		"status":      "ok",
+		"time":        time.Now().Format(time.RFC3339),
+		"environment": s.config.Environment,
+		"version":     s.config.Version,
+	}
+	
+	response.Success(c, healthInfo, "Service is healthy")
 }
 
+// Start begins listening for HTTP requests on the specified address
 func (s *Server) Start(addr string) error {
+	s.logger.Infof("Starting API server on %s", addr)
 	return s.router.Run(addr)
 }
 
+// Router returns the Gin engine for testing
 func (s *Server) Router() *gin.Engine {
 	return s.router
+}
+
+// Shutdown gracefully shuts down the server
+func (s *Server) Shutdown() {
+	s.logger.Info("Shutting down API server")
 }

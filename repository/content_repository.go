@@ -2,10 +2,12 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
+	"github.com/0xsj/gin-sqlc/log"
+	"github.com/0xsj/gin-sqlc/pkg/errors"
 	"github.com/google/uuid"
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
 )
 
@@ -18,6 +20,7 @@ type ContentRepository interface {
 	DeleteContentItem(ctx context.Context, itemID uuid.UUID) error
 }
 
+// CreateContentItemParams matches the service input types
 type CreateContentItemParams struct {
 	UserID       uuid.UUID
 	ContentID    string
@@ -39,6 +42,7 @@ type CreateContentItemParams struct {
 	IsActive     bool
 }
 
+// UpdateContentItemParams matches the service input types
 type UpdateContentItemParams struct {
 	ItemID       uuid.UUID
 	Title        *string
@@ -54,6 +58,7 @@ type UpdateContentItemParams struct {
 	IsActive     *bool
 }
 
+// UpdatePositionParams matches the service input types
 type UpdatePositionParams struct {
 	ItemID   uuid.UUID
 	DesktopX *int32
@@ -63,155 +68,92 @@ type UpdatePositionParams struct {
 }
 
 type SQLContentRepository struct {
-	db *db.Queries
+	db     *db.Queries
+	logger log.Logger
 }
 
-func NewContentRepository(db *db.Queries) ContentRepository {
+func NewContentRepository(db *db.Queries, logger log.Logger) ContentRepository {
 	return &SQLContentRepository{
-		db: db,
+		db:     db,
+		logger: logger,
 	}
 }
 
 func (r *SQLContentRepository) CreateContentItem(ctx context.Context, params CreateContentItemParams) (*db.ContentItem, error) {
-	var title, href, url, mediaType, desktopStyle, mobileStyle, halign, valign *string
-	var desktopX, desktopY, mobileX, mobileY *int32
+	r.logger.Infof("Creating content item with type: %s for user ID: %s", params.ContentType, params.UserID)
 
-	if params.Title != nil {
-		title = params.Title
-	}
-
-	if params.Href != nil {
-		href = params.Href
-	}
-
-	if params.URL != nil {
-		url = params.URL
-	}
-
-	if params.MediaType != nil {
-		mediaType = params.MediaType
-	}
-
-	if params.DesktopX != nil {
-		desktopX = params.DesktopX
-	}
-
-	if params.DesktopY != nil {
-		desktopY = params.DesktopY
-	}
-
-	if params.MobileX != nil {
-		mobileX = params.MobileX
-	}
-
-	if params.MobileY != nil {
-		mobileY = params.MobileY
-	}
-
-	if params.MobileStyle != nil {
-		mobileStyle = params.MobileStyle
-	}
-
-	if params.HAlign != nil {
-		halign = params.HAlign
-	}
-
-	if params.VAlign != nil {
-		valign = params.VAlign
-	}
-
-	isActive := &params.IsActive
-
+	// We directly pass the pointers since the types now match
 	sqlcParams := db.CreateContentItemParams{
 		UserID:       params.UserID,
-		ContentID:    params.ContentType,
+		ContentID:    params.ContentID,
 		ContentType:  params.ContentType,
-		Title:        title,
-		Href:         href,
-		Url:          url,
-		MediaType:    mediaType,
-		DesktopX:     desktopX,
-		DesktopY:     desktopY,
-		DesktopStyle: desktopStyle,
-		MobileX:      mobileX,
-		MobileY:      mobileY,
-		MobileStyle:  mobileStyle,
-		Halign:       halign,
-		Valign:       valign,
+		Title:        params.Title,
+		Href:         params.Href,
+		Url:          params.URL,
+		MediaType:    params.MediaType,
+		DesktopX:     params.DesktopX,
+		DesktopY:     params.DesktopY,
+		DesktopStyle: params.DesktopStyle,
+		MobileX:      params.MobileX,
+		MobileY:      params.MobileY,
+		MobileStyle:  params.MobileStyle,
+		Halign:       params.HAlign,
+		Valign:       params.VAlign,
 		ContentData:  params.ContentData,
 		Overrides:    params.Overrides,
-		IsActive:     isActive,
+		IsActive:     &params.IsActive,
 	}
 
+	start := time.Now()
 	item, err := r.db.CreateContentItem(ctx, sqlcParams)
+	duration := time.Since(start)
+
 	if err != nil {
-		pgErr, ok := err.(*pgconn.PgError)
-		if ok {
-			if pgErr.Code == "23505" {
-				return nil, ErrDuplicateKey
-			}
-
-			if pgErr.Code == "23503" {
-				return nil, ErrForeignKeyViolation
-			}
-		}
-
-		return nil, ErrDatabase
+		appErr := errors.HandleDBError(err, "content item")
+		appErr.Log(r.logger)
+		return nil, appErr
 	}
 
+	r.logger.Infof("Content item created successfully with ID: %s in %v", item.ItemID, duration)
 	return item, nil
 }
 
 func (r *SQLContentRepository) GetContentItem(ctx context.Context, itemID uuid.UUID) (*db.ContentItem, error) {
+	r.logger.Debugf("Getting content item with ID: %s", itemID)
+
+	start := time.Now()
 	item, err := r.db.GetContentItem(ctx, itemID)
+	duration := time.Since(start)
+
 	if err != nil {
-		return nil, ErrRecordNotFound
+		appErr := errors.HandleDBError(err, "content item")
+		appErr.Log(r.logger)
+		return nil, appErr
 	}
 
+	r.logger.Debugf("Content item retrieved successfully with ID: %s in %v", itemID, duration)
 	return item, nil
 }
 
 func (r *SQLContentRepository) GetUserContentItems(ctx context.Context, userID uuid.UUID) ([]*db.ContentItem, error) {
+	r.logger.Debugf("Getting content items for user ID: %s", userID)
+
+	start := time.Now()
 	items, err := r.db.GetUserContentItems(ctx, userID)
+	duration := time.Since(start)
+
 	if err != nil {
-		return nil, ErrDatabase
+		appErr := errors.HandleDBError(err, "content items")
+		appErr.Log(r.logger)
+		return nil, appErr
 	}
 
+	r.logger.Debugf("Retrieved %d content items for user ID: %s in %v", len(items), userID, duration)
 	return items, nil
 }
 
 func (r *SQLContentRepository) UpdateContentItem(ctx context.Context, params UpdateContentItemParams) error {
-	// Convert our params to SQLC params
-	var title, href, url, mediaType, desktopStyle, mobileStyle, halign, valign *string
-	var isActive *bool
-
-	if params.Title != nil {
-		title = params.Title
-	}
-	if params.Href != nil {
-		href = params.Href
-	}
-	if params.URL != nil {
-		url = params.URL
-	}
-	if params.MediaType != nil {
-		mediaType = params.MediaType
-	}
-	if params.DesktopStyle != nil {
-		desktopStyle = params.DesktopStyle
-	}
-	if params.MobileStyle != nil {
-		mobileStyle = params.MobileStyle
-	}
-	if params.HAlign != nil {
-		halign = params.HAlign
-	}
-	if params.VAlign != nil {
-		valign = params.VAlign
-	}
-	if params.IsActive != nil {
-		isActive = params.IsActive
-	}
+	r.logger.Infof("Updating content item with ID: %s", params.ItemID)
 
 	// Initialize ContentData and Overrides as null by default
 	contentData := pgtype.JSONB{Status: pgtype.Null}
@@ -229,28 +171,36 @@ func (r *SQLContentRepository) UpdateContentItem(ctx context.Context, params Upd
 
 	sqlcParams := db.UpdateContentItemParams{
 		ItemID:       params.ItemID,
-		Title:        title,
-		Href:         href,
-		Url:          url,
-		MediaType:    mediaType,
-		DesktopStyle: desktopStyle,
-		MobileStyle:  mobileStyle,
-		Halign:       halign,
-		Valign:       valign,
+		Title:        params.Title,
+		Href:         params.Href,
+		Url:          params.URL,
+		MediaType:    params.MediaType,
+		DesktopStyle: params.DesktopStyle,
+		MobileStyle:  params.MobileStyle,
+		Halign:       params.HAlign,
+		Valign:       params.VAlign,
 		ContentData:  contentData,
 		Overrides:    overrides,
-		IsActive:     isActive,
+		IsActive:     params.IsActive,
 	}
 
+	start := time.Now()
 	err := r.db.UpdateContentItem(ctx, sqlcParams)
+	duration := time.Since(start)
+
 	if err != nil {
-		return ErrDatabase
+		appErr := errors.HandleDBError(err, "content item update")
+		appErr.Log(r.logger)
+		return appErr
 	}
 
+	r.logger.Infof("Content item updated successfully with ID: %s in %v", params.ItemID, duration)
 	return nil
 }
 
 func (r *SQLContentRepository) UpdateContentItemPosition(ctx context.Context, params UpdatePositionParams) error {
+	r.logger.Infof("Updating position for content item with ID: %s", params.ItemID)
+
 	sqlcParams := db.UpdateContentItemPositionParams{
 		ItemID:   params.ItemID,
 		DesktopX: params.DesktopX,
@@ -259,19 +209,33 @@ func (r *SQLContentRepository) UpdateContentItemPosition(ctx context.Context, pa
 		MobileY:  params.MobileY,
 	}
 
+	start := time.Now()
 	err := r.db.UpdateContentItemPosition(ctx, sqlcParams)
+	duration := time.Since(start)
+
 	if err != nil {
-		return ErrDatabase
+		appErr := errors.HandleDBError(err, "content item position update")
+		appErr.Log(r.logger)
+		return appErr
 	}
 
+	r.logger.Infof("Position updated successfully for content item ID: %s in %v", params.ItemID, duration)
 	return nil
 }
 
 func (r *SQLContentRepository) DeleteContentItem(ctx context.Context, itemID uuid.UUID) error {
+	r.logger.Infof("Deleting content item with ID: %s", itemID)
+
+	start := time.Now()
 	err := r.db.DeleteContentItem(ctx, itemID)
+	duration := time.Since(start)
+
 	if err != nil {
-		return ErrDatabase
+		appErr := errors.HandleDBError(err, "content item deletion")
+		appErr.Log(r.logger)
+		return appErr
 	}
 
+	r.logger.Infof("Content item deleted successfully with ID: %s in %v", itemID, duration)
 	return nil
 }

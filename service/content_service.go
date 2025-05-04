@@ -3,11 +3,11 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"time"
 
-	"github.com/0xsj/gin-sqlc/api"
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
+	"github.com/0xsj/gin-sqlc/log"
+	"github.com/0xsj/gin-sqlc/pkg/errors"
 	"github.com/0xsj/gin-sqlc/repository"
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
@@ -25,6 +25,7 @@ type ContentService interface {
 type contentService struct {
 	contentRepo repository.ContentRepository
 	userRepo    repository.UserRepository
+	logger      log.Logger
 }
 
 type CreateContentItemInput struct {
@@ -104,33 +105,42 @@ type StyleDTO struct {
 	Mobile  string `json:"mobile,omitempty"`
 }
 
-func NewContentService(contentRepo repository.ContentRepository, userRepo repository.UserRepository) ContentService {
+func NewContentService(contentRepo repository.ContentRepository, userRepo repository.UserRepository, logger log.Logger) ContentService {
 	return &contentService{
 		contentRepo: contentRepo,
 		userRepo:    userRepo,
+		logger:      logger,
 	}
 }
 
 func (s *contentService) CreateContentItem(ctx context.Context, input CreateContentItemInput) (*ContentItemDTO, error) {
+	s.logger.Infof("Creating content item for user ID: %s with content type: %s", input.UserID, input.ContentType)
+
 	userID, err := uuid.Parse(input.UserID)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid user ID format: %v", err)
+		return nil, errors.NewBadRequestError("Invalid user ID format", err)
 	}
 
+	// Verify user exists
 	_, err = s.userRepo.GetUser(ctx, userID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
+		if errors.IsNotFound(err) {
+			s.logger.Warnf("User not found with ID: %s", input.UserID)
+			return nil, errors.NewNotFoundError("User not found", err)
 		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Error retrieving user: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve user")
 	}
 
+	// Process JSON data
 	var contentData, overrides pgtype.JSONB
 	if len(input.ContentData) > 0 {
 		contentData.Status = pgtype.Present
 		contentData.Bytes, err = json.Marshal(input.ContentData)
 		if err != nil {
-			return nil, api.ErrInvalidInput
+			s.logger.Warnf("Failed to marshal content data: %v", err)
+			return nil, errors.NewValidationError("Invalid content data format", err)
 		}
 	} else {
 		contentData.Status = pgtype.Null
@@ -140,12 +150,14 @@ func (s *contentService) CreateContentItem(ctx context.Context, input CreateCont
 		overrides.Status = pgtype.Present
 		overrides.Bytes, err = json.Marshal(input.Overrides)
 		if err != nil {
-			return nil, api.ErrInvalidInput
+			s.logger.Warnf("Failed to marshal overrides: %v", err)
+			return nil, errors.NewValidationError("Invalid overrides format", err)
 		}
 	} else {
 		overrides.Status = pgtype.Null
 	}
 
+	// Create content item
 	params := repository.CreateContentItemParams{
 		UserID:       userID,
 		ContentID:    input.ContentID,
@@ -169,47 +181,65 @@ func (s *contentService) CreateContentItem(ctx context.Context, input CreateCont
 
 	contentItem, err := s.contentRepo.CreateContentItem(ctx, params)
 	if err != nil {
-		if errors.Is(err, repository.ErrDuplicateKey) {
-			return nil, api.ErrDuplicateEntry
+		if errors.IsConflict(err) {
+			s.logger.Warnf("Content item already exists: %v", err)
+			return nil, errors.NewConflictError("Content item already exists", err)
 		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to create content item: %v", err)
+		return nil, errors.Wrap(err, "Failed to create content item")
 	}
+
+	s.logger.Infof("Content item created successfully with ID: %s", contentItem.ItemID)
 	return mapContentItemToDTO(contentItem), nil
 }
 
 func (s *contentService) GetContentItem(ctx context.Context, itemIDStr string) (*ContentItemDTO, error) {
+	s.logger.Debugf("Getting content item with ID: %s", itemIDStr)
+
 	itemID, err := uuid.Parse(itemIDStr)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid item ID format: %v", err)
+		return nil, errors.NewBadRequestError("Invalid item ID format", err)
 	}
 
 	contentItem, err := s.contentRepo.GetContentItem(ctx, itemID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
+		if errors.IsNotFound(err) {
+			s.logger.Infof("Content item not found with ID: %s", itemIDStr)
+			return nil, errors.NewNotFoundError("Content item not found", err)
 		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Error retrieving content item: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve content item")
 	}
+
+	s.logger.Debugf("Content item retrieved successfully with ID: %s", itemIDStr)
 	return mapContentItemToDTO(contentItem), nil
 }
 
 func (s *contentService) GetUserContentItems(ctx context.Context, userIDStr string) ([]*ContentItemDTO, error) {
+	s.logger.Debugf("Getting content items for user ID: %s", userIDStr)
+
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid user ID format: %v", err)
+		return nil, errors.NewBadRequestError("Invalid user ID format", err)
 	}
 
+	// Verify user exists
 	_, err = s.userRepo.GetUser(ctx, userID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
+		if errors.IsNotFound(err) {
+			s.logger.Infof("User not found with ID: %s", userIDStr)
+			return nil, errors.NewNotFoundError("User not found", err)
 		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Error retrieving user: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve user")
 	}
 
 	contentItems, err := s.contentRepo.GetUserContentItems(ctx, userID)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to retrieve content items: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve content items")
 	}
 
 	dtos := make([]*ContentItemDTO, len(contentItems))
@@ -217,24 +247,31 @@ func (s *contentService) GetUserContentItems(ctx context.Context, userIDStr stri
 		dtos[i] = mapContentItemToDTO(item)
 	}
 
+	s.logger.Debugf("Retrieved %d content items for user ID: %s", len(dtos), userIDStr)
 	return dtos, nil
-
 }
 
 func (s *contentService) UpdateContentItem(ctx context.Context, itemIDStr string, input UpdateContentItemInput) (*ContentItemDTO, error) {
+	s.logger.Infof("Updating content item with ID: %s", itemIDStr)
+
 	itemID, err := uuid.Parse(itemIDStr)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid item ID format: %v", err)
+		return nil, errors.NewBadRequestError("Invalid item ID format", err)
 	}
 
+	// Verify content item exists
 	_, err = s.contentRepo.GetContentItem(ctx, itemID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
+		if errors.IsNotFound(err) {
+			s.logger.Infof("Content item not found with ID: %s", itemIDStr)
+			return nil, errors.NewNotFoundError("Content item not found", err)
 		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Error retrieving content item: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve content item")
 	}
 
+	// Process JSON data
 	var contentData, overrides *pgtype.JSONB
 
 	if len(input.ContentData) > 0 {
@@ -242,7 +279,8 @@ func (s *contentService) UpdateContentItem(ctx context.Context, itemIDStr string
 		cData.Status = pgtype.Present
 		cData.Bytes, err = json.Marshal(input.ContentData)
 		if err != nil {
-			return nil, api.ErrInvalidInput
+			s.logger.Warnf("Failed to marshal content data: %v", err)
+			return nil, errors.NewValidationError("Invalid content data format", err)
 		}
 		contentData = &cData
 	}
@@ -252,11 +290,13 @@ func (s *contentService) UpdateContentItem(ctx context.Context, itemIDStr string
 		oData.Status = pgtype.Present
 		oData.Bytes, err = json.Marshal(input.Overrides)
 		if err != nil {
-			return nil, api.ErrInvalidInput
+			s.logger.Warnf("Failed to marshal overrides: %v", err)
+			return nil, errors.NewValidationError("Invalid overrides format", err)
 		}
 		overrides = &oData
 	}
 
+	// Update content item
 	params := repository.UpdateContentItemParams{
 		ItemID:       itemID,
 		Title:        input.Title,
@@ -274,31 +314,42 @@ func (s *contentService) UpdateContentItem(ctx context.Context, itemIDStr string
 
 	err = s.contentRepo.UpdateContentItem(ctx, params)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to update content item: %v", err)
+		return nil, errors.Wrap(err, "Failed to update content item")
 	}
 
+	// Retrieve updated item
 	updatedItem, err := s.contentRepo.GetContentItem(ctx, itemID)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to retrieve updated content item: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve updated content item")
 	}
 
+	s.logger.Infof("Content item updated successfully with ID: %s", itemIDStr)
 	return mapContentItemToDTO(updatedItem), nil
 }
 
 func (s *contentService) UpdateContentItemPosition(ctx context.Context, itemIDStr string, input UpdatePositionInput) (*ContentItemDTO, error) {
+	s.logger.Infof("Updating position for content item with ID: %s", itemIDStr)
+
 	itemID, err := uuid.Parse(itemIDStr)
 	if err != nil {
-		return nil, api.ErrInvalidInput
+		s.logger.Warnf("Invalid item ID format: %v", err)
+		return nil, errors.NewBadRequestError("Invalid item ID format", err)
 	}
 
+	// Verify content item exists
 	_, err = s.contentRepo.GetContentItem(ctx, itemID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, api.ErrNotFound
+		if errors.IsNotFound(err) {
+			s.logger.Infof("Content item not found with ID: %s", itemIDStr)
+			return nil, errors.NewNotFoundError("Content item not found", err)
 		}
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Error retrieving content item: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve content item")
 	}
 
+	// Update position
 	params := repository.UpdatePositionParams{
 		ItemID:   itemID,
 		DesktopX: input.DesktopX,
@@ -309,36 +360,49 @@ func (s *contentService) UpdateContentItemPosition(ctx context.Context, itemIDSt
 
 	err = s.contentRepo.UpdateContentItemPosition(ctx, params)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to update content item position: %v", err)
+		return nil, errors.Wrap(err, "Failed to update content item position")
 	}
 
+	// Retrieve updated item
 	updatedItem, err := s.contentRepo.GetContentItem(ctx, itemID)
 	if err != nil {
-		return nil, api.ErrInternalServer
+		s.logger.Errorf("Failed to retrieve updated content item: %v", err)
+		return nil, errors.Wrap(err, "Failed to retrieve updated content item")
 	}
 
+	s.logger.Infof("Position updated successfully for content item ID: %s", itemIDStr)
 	return mapContentItemToDTO(updatedItem), nil
 }
 
 func (s *contentService) DeleteContentItem(ctx context.Context, itemIDStr string) error {
+	s.logger.Infof("Deleting content item with ID: %s", itemIDStr)
+
 	itemID, err := uuid.Parse(itemIDStr)
 	if err != nil {
-		return api.ErrInvalidInput
+		s.logger.Warnf("Invalid item ID format: %v", err)
+		return errors.NewBadRequestError("Invalid item ID format", err)
 	}
 
+	// Verify content item exists
 	_, err = s.contentRepo.GetContentItem(ctx, itemID)
 	if err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return api.ErrNotFound
+		if errors.IsNotFound(err) {
+			s.logger.Infof("Content item not found with ID: %s", itemIDStr)
+			return errors.NewNotFoundError("Content item not found", err)
 		}
-		return api.ErrInternalServer
+		s.logger.Errorf("Error retrieving content item: %v", err)
+		return errors.Wrap(err, "Failed to retrieve content item")
 	}
 
+	// Delete content item
 	err = s.contentRepo.DeleteContentItem(ctx, itemID)
 	if err != nil {
-		return api.ErrInternalServer
+		s.logger.Errorf("Failed to delete content item: %v", err)
+		return errors.Wrap(err, "Failed to delete content item")
 	}
 
+	s.logger.Infof("Content item deleted successfully with ID: %s", itemIDStr)
 	return nil
 }
 
