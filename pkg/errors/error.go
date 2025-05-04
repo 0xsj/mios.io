@@ -253,3 +253,14 @@ func HandleDBError(err error, entity string) *AppError {
 		return NewDatabaseError("Database operation failed", err)
 	}
 }
+
+func IsNotFound(err error) bool {
+    var appErr *AppError
+    return errors.As(err, &appErr) && appErr.Code == "NOT_FOUND"
+}
+
+// IsConflict checks if an error is a Conflict error
+func IsConflict(err error) bool {
+    var appErr *AppError
+    return errors.As(err, &appErr) && appErr.Code == "CONFLICT"
+}
