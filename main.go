@@ -92,9 +92,9 @@ func main() {
 
 	logger.Info("Initializing handlers...")
 	userHandler := user.NewHandler(userService, logger)
-	authHandler := auth.NewHandler(authService)
+	authHandler := auth.NewHandler(authService, logger)
 	contentHandler := content.NewHandler(contentService, logger)
-	analyticsHandler := analytics.NewHandler(analyticsService)
+	analyticsHandler := analytics.NewHandler(analyticsService, logger)
 
 	logger.Info("Setting up server...")
 	server := api.NewServer(cfg, queries, logger)
