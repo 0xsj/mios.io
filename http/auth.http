@@ -24,7 +24,7 @@ POST {{baseUrl}}/api/auth/login
 Content-Type: {{contentType}}
 
 {
-  "email": "test@example.com",
+  "email": "sjtommylee@gmail.com",
   "password": "Password123!"
 }
 

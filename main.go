@@ -17,104 +17,123 @@ import (
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
 	"github.com/0xsj/gin-sqlc/log"
 	"github.com/0xsj/gin-sqlc/middleware"
-	"github.com/0xsj/gin-sqlc/pkg/password"
 	"github.com/0xsj/gin-sqlc/repository"
 	"github.com/0xsj/gin-sqlc/service"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-func testPasswordVerification() {
-	storedHash := "$2a$12$zS4uugKZD/axLQwjvSkGx.bIau3FX5UPox/digU9Quv9ujw9gpVDO"
-	storedSalt := "lNj+J85F8862k7icgRKChQ=="
-	plainPassword := "Password123!"
-
-	err := password.VerifyPassword(plainPassword, storedHash, storedSalt)
-	fmt.Printf("Password verification result: %v\n", err)
-}
+// func testPasswordVerification() {
+// 	storedHash := "$2a$12$zS4uugKZD/axLQwjvSkGx.bIau3FX5UPox/digU9Quv9ujw9gpVDO"
+// 	storedSalt := "lNj+J85F8862k7icgRKChQ=="
+// 	plainPassword := "Password123!"
+// 	err := password.VerifyPassword(plainPassword, storedHash, storedSalt)
+// 	fmt.Printf("Password verification result: %v\n", err)
+// }
 
 func main() {
 	// testPasswordVerification()
 	fmt.Println("Starting application...")
-
+	
 	// Get environment
 	environment := os.Getenv("ENVIRONMENT")
 	if environment == "" {
 		environment = "development"
 	}
-
-	// Initialize logger
-	logger := log.NewZapLogger(environment)
-	logger.Info("Starting application with ZapLogger...")
-
+	
+	// Initialize base logger
+	baseLogger := log.NewZapLogger(environment)
+	baseLogger.Info("Starting application with ZapLogger...")
+	
+	// Create layer-specific loggers
+	appLogger := baseLogger.WithLayer("App")
+	repoLogger := baseLogger.WithLayer("Repository")
+	serviceLogger := baseLogger.WithLayer("Service")
+	handlerLogger := baseLogger.WithLayer("Handler")
+	middlewareLogger := baseLogger.WithLayer("Middleware")
+	serverLogger := baseLogger.WithLayer("Server")
+	
 	// Load configuration
-	fmt.Println("Loading configuration...")
+	appLogger.Info("Loading configuration...")
 	cfg := config.LoadConfig("dev", ".")
-	logger.Debugf("Loaded configuration: %+v", cfg)
-
+	appLogger.Debugf("Loaded configuration: %+v", cfg)
+	
 	if cfg.DBUsername == "" || cfg.DBPassword == "" || cfg.DBHost == "" || cfg.DBPort == "" || cfg.DBName == "" {
-		logger.Fatal("ERROR: Database configuration values are missing")
+		appLogger.Fatal("ERROR: Database configuration values are missing")
 		return
 	}
-
+	
 	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		cfg.DBUsername, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName)
-	logger.Debugf("Database URL: %s", dbURL)
-
-	logger.Info("Connecting to database...")
+	appLogger.Debugf("Database URL: %s", dbURL)
+	
+	// Connect to database
+	appLogger.Info("Connecting to database...")
 	dbpool, err := pgxpool.Connect(context.Background(), dbURL)
 	if err != nil {
-		logger.Fatalf("Database connection error: %v", err)
+		appLogger.Fatalf("Database connection error: %v", err)
 	}
-
-	logger.Info("Testing database connection with ping...")
+	
+	appLogger.Info("Testing database connection with ping...")
 	err = dbpool.Ping(context.Background())
 	if err != nil {
-		logger.Fatalf("Database ping failed: %v", err)
+		appLogger.Fatalf("Database ping failed: %v", err)
 	}
-	logger.Info("Database connection successful!")
-
+	
+	appLogger.Info("Database connection successful!")
 	defer dbpool.Close()
-
-	logger.Info("Initializing database queries...")
+	
+	// Initialize database and components
+	appLogger.Info("Initializing database queries...")
 	queries := db.New(dbpool)
-
-	logger.Info("Initializing repositories...")
-	userRepo := repository.NewUserRepository(queries, logger)
-	authRepo := repository.NewAuthRepository(queries, logger)
-	contentRepo := repository.NewContentRepository(queries, logger)
-	analyticsRepo := repository.NewAnalyticsRepository(queries, logger)
-
-	logger.Info("Initializing services...")
-	userService := service.NewUserService(userRepo, logger)
-	authService := service.NewAuthService(userRepo, authRepo, cfg.JWTSecret, cfg.GetTokenDuration(), logger)
-	contentService := service.NewContentService(contentRepo, userRepo, logger)
-	analyticsService := service.NewAnalyticsService(analyticsRepo, contentRepo, userRepo, logger)
-
-	logger.Info("Initializing handlers...")
-	userHandler := user.NewHandler(userService, logger)
-	authHandler := auth.NewHandler(authService, logger)
-	contentHandler := content.NewHandler(contentService, logger)
-	analyticsHandler := analytics.NewHandler(analyticsService, logger)
-
-	logger.Info("Setting up server...")
-	server := api.NewServer(cfg, queries, logger)
-
-	server.Router().Use(middleware.LoggingMiddleware(logger))
-
+	
+	// Initialize repositories with repository-specific logger
+	appLogger.Info("Initializing repositories...")
+	userRepo := repository.NewUserRepository(queries, repoLogger.WithField("repository", "User"))
+	authRepo := repository.NewAuthRepository(queries, repoLogger.WithField("repository", "Auth"))
+	contentRepo := repository.NewContentRepository(queries, repoLogger.WithField("repository", "Content"))
+	analyticsRepo := repository.NewAnalyticsRepository(queries, repoLogger.WithField("repository", "Analytics"))
+	
+	// Initialize services with service-specific logger
+	appLogger.Info("Initializing services...")
+	userService := service.NewUserService(userRepo, serviceLogger.WithField("service", "User"))
+	authService := service.NewAuthService(userRepo, authRepo, cfg.JWTSecret, cfg.GetTokenDuration(), 
+		serviceLogger.WithField("service", "Auth"))
+	contentService := service.NewContentService(contentRepo, userRepo, 
+		serviceLogger.WithField("service", "Content"))
+	analyticsService := service.NewAnalyticsService(analyticsRepo, contentRepo, userRepo, 
+		serviceLogger.WithField("service", "Analytics"))
+	
+	// Initialize handlers with handler-specific logger
+	appLogger.Info("Initializing handlers...")
+	userHandler := user.NewHandler(userService, handlerLogger.WithField("handler", "User"))
+	authHandler := auth.NewHandler(authService, handlerLogger.WithField("handler", "Auth"))
+	contentHandler := content.NewHandler(contentService, handlerLogger.WithField("handler", "Content"))
+	analyticsHandler := analytics.NewHandler(analyticsService, handlerLogger.WithField("handler", "Analytics"))
+	
+	// Setup server
+	appLogger.Info("Setting up server...")
+	server := api.NewServer(cfg, queries, serverLogger)
+	
+	// Apply middleware
+	server.Router().Use(middleware.LoggingMiddleware(middlewareLogger))
+	
+	// Register routes
 	server.RegisterHandlers(userHandler, authHandler, contentHandler, authService, analyticsHandler)
-
-	logger.Infof("Starting HTTP server on %s:%s...", cfg.Host, cfg.Port)
+	
+	// Start server
+	appLogger.Infof("Starting HTTP server on %s:%s...", cfg.Host, cfg.Port)
 	go func() {
 		addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
 		if err := server.Start(addr); err != nil && err != http.ErrServerClosed {
-			logger.Fatalf("Server error: %v", err)
+			appLogger.Fatalf("Server error: %v", err)
 		}
 	}()
-
+	
+	// Wait for shutdown signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-
-	logger.Info("Shutdown signal received...")
-	logger.Info("Server successfully shut down")
+	
+	appLogger.Info("Shutdown signal received...")
+	appLogger.Info("Server successfully shut down")
 }

@@ -15,17 +15,39 @@ func NewZapLogger(environment string) Logger {
     var config zap.Config
     if environment == "production" {
         config = zap.NewProductionConfig()
+        // Use JSON encoder for production
+        config.Encoding = "json"
+        config.DisableStacktrace = true
     } else {
         config = zap.NewDevelopmentConfig()
+        // Use console encoder with better formatting for development
+        config.Encoding = "console"
         config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+        config.EncoderConfig.EncodeDuration = zapcore.StringDurationEncoder
+        config.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("15:04:05.000")
+        config.DisableStacktrace = true
     }
     
-    // Enable caller information
+    // Customize output format
     config.DisableCaller = false
     config.EncoderConfig.CallerKey = "caller"
+    config.EncoderConfig.MessageKey = "msg"
+    config.EncoderConfig.LevelKey = "level"
+    config.EncoderConfig.TimeKey = "time"
+    
+    // Improve readability
     config.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
     
-    logger, _ := config.Build(zap.AddCallerSkip(1)) // Skip one level to show actual caller
+    // Create logger with appropriate skip level
+    logger, _ := config.Build(zap.AddCallerSkip(1))
+    
+    // Conditionally enable stack traces only for errors and fatal logs
+    if environment != "production" {
+        logger = logger.WithOptions(
+            zap.AddStacktrace(zapcore.ErrorLevel),
+        )
+    }
+    
     return &ZapLogger{
         logger: logger.Sugar(),
     }
