@@ -33,7 +33,7 @@ func testPasswordVerification() {
 }
 
 func main() {
-	testPasswordVerification()
+	// testPasswordVerification()
 	fmt.Println("Starting application...")
 
 	// Get environment
@@ -80,14 +80,14 @@ func main() {
 
 	logger.Info("Initializing repositories...")
 	userRepo := repository.NewUserRepository(queries, logger)
-	authRepo := repository.NewAuthRepository(queries)
-	contentRepo := repository.NewContentRepository(queries)
-	analyticsRepo := repository.NewAnalyticsRepository(queries)
+	authRepo := repository.NewAuthRepository(queries, logger)
+	contentRepo := repository.NewContentRepository(queries, logger)
+	analyticsRepo := repository.NewAnalyticsRepository(queries, logger)
 
 	logger.Info("Initializing services...")
 	userService := service.NewUserService(userRepo, logger)
-	authService := service.NewAuthService(userRepo, authRepo, cfg.JWTSecret, cfg.GetTokenDuration())
-	contentService := service.NewContentService(contentRepo, userRepo)
+	authService := service.NewAuthService(userRepo, authRepo, cfg.JWTSecret, cfg.GetTokenDuration(), logger)
+	contentService := service.NewContentService(contentRepo, userRepo, logger)
 	analyticsService := service.NewAnalyticsService(analyticsRepo, contentRepo, userRepo)
 
 	logger.Info("Initializing handlers...")
