@@ -149,3 +149,13 @@ format:
 	else \
 		go fmt ./...; \
 	fi
+
+## openapi: Generate OpenAPI documentation
+openapi:
+	@echo "Generating OpenAPI documentation..."
+	@go run cmd/openapi/main.go
+
+## serve-docs: Serve OpenAPI documentation
+serve-docs:
+	@echo "Serving OpenAPI documentation..."
+	@docker run -p 8085:8080 -e SWAGGER_JSON=/docs/openapi.json -v $(PWD)/docs:/docs swaggerapi/swagger-ui
