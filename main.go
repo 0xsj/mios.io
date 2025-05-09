@@ -11,6 +11,7 @@ import (
 	"github.com/0xsj/gin-sqlc/api/analytics"
 	"github.com/0xsj/gin-sqlc/api/auth"
 	"github.com/0xsj/gin-sqlc/api/content"
+	"github.com/0xsj/gin-sqlc/api/openapi"
 	api "github.com/0xsj/gin-sqlc/api/server"
 	"github.com/0xsj/gin-sqlc/api/user"
 	"github.com/0xsj/gin-sqlc/config"
@@ -21,6 +22,7 @@ import (
 	"github.com/0xsj/gin-sqlc/service"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4/pgxpool"
+	openapiMiddleware "github.com/oapi-codegen/gin-middleware"
 )
 
 func main() {
@@ -48,6 +50,7 @@ func main() {
 	handlerLogger := baseLogger.WithLayer("Handler")
 	middlewareLogger := baseLogger.WithLayer("Middleware")
 	serverLogger := baseLogger.WithLayer("Server")
+	openapiLogger := baseLogger.WithLayer("OpenAPI") // Add this logger
 	
 	// Load configuration
 	appLogger.Info("Loading configuration...")
@@ -107,6 +110,16 @@ func main() {
 	contentHandler := content.NewHandler(contentService, handlerLogger.With("handler", "Content"))
 	analyticsHandler := analytics.NewHandler(analyticsService, handlerLogger.With("handler", "Analytics"))
 	
+	// Initialize OpenAPI handler
+	appLogger.Info("Initializing OpenAPI handler...")
+	openapiHandler := openapi.NewHandler(
+		authService,        // Now using interface type, not pointer
+		userService,        // Now using interface type, not pointer
+		contentService,     // Now using interface type, not pointer
+		analyticsService,   // Now using interface type, not pointer
+		openapiLogger,
+	)
+	
 	// Setup server
 	appLogger.Info("Setting up server...")
 	server := api.NewServer(cfg, queries, serverLogger)
@@ -114,8 +127,24 @@ func main() {
 	// Apply middleware
 	server.Router().Use(middleware.LoggingMiddleware(middlewareLogger))
 	
+	// Get OpenAPI spec for validation middleware
+	swagger, err := openapi.GetSwagger()
+	if err == nil {
+		swagger.Servers = nil // Clear the server list to accept requests on any path
+		
+		// Add OpenAPI validation middleware
+		appLogger.Info("Adding OpenAPI validation middleware...")
+		server.Router().Use(openapiMiddleware.OapiRequestValidator(swagger))
+	} else {
+		appLogger.Errorf("Error loading OpenAPI spec: %v", err)
+	}
+	
 	// Register routes
 	server.RegisterHandlers(userHandler, authHandler, contentHandler, authService, analyticsHandler)
+	
+	// Register OpenAPI routes
+	appLogger.Info("Registering OpenAPI handlers...")
+	openapi.RegisterOpenAPIHandlers(server.Router(), openapiHandler) // Updated function name
 	
 	// Start server
 	appLogger.Infof("Starting HTTP server on %s:%s...", cfg.Host, cfg.Port)
