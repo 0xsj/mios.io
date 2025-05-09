@@ -24,7 +24,10 @@ type Server struct {
 }
 
 func NewServer(config config.Config, store db.Querier, logger log.Logger) *Server {
-	router := gin.New()
+	
+	router := gin.Default()
+
+	router.SetTrustedProxies([]string{"127.0.0.1"})
 	
 	router.Use(middleware.RequestLogger(logger))
 	router.Use(middleware.Recovery(logger))
@@ -54,7 +57,6 @@ func (s *Server) RegisterHandlers(
 	adminMiddleware := middleware.AdminMiddleware(s.logger)
 	verifiedEmailMiddleware := middleware.RequireVerifiedEmail(authService, s.logger)
 
-	// Public routes - no authentication required
 	publicRoutes := s.router.Group("/api")
 	{
 		// Auth routes

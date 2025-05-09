@@ -19,30 +19,27 @@ import (
 	"github.com/0xsj/gin-sqlc/middleware"
 	"github.com/0xsj/gin-sqlc/repository"
 	"github.com/0xsj/gin-sqlc/service"
+	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-// func testPasswordVerification() {
-// 	storedHash := "$2a$12$zS4uugKZD/axLQwjvSkGx.bIau3FX5UPox/digU9Quv9ujw9gpVDO"
-// 	storedSalt := "lNj+J85F8862k7icgRKChQ=="
-// 	plainPassword := "Password123!"
-// 	err := password.VerifyPassword(plainPassword, storedHash, storedSalt)
-// 	fmt.Printf("Password verification result: %v\n", err)
-// }
-
 func main() {
-	// testPasswordVerification()
+	gin.SetMode(gin.ReleaseMode)
 	fmt.Println("Starting application...")
 	
-	// Get environment
 	environment := os.Getenv("ENVIRONMENT")
 	if environment == "" {
 		environment = "development"
 	}
 	
-	// Initialize base logger
-	baseLogger := log.NewZapLogger(environment)
-	baseLogger.Info("Starting application with ZapLogger...")
+	var baseLogger log.Logger
+	if environment == "production" {
+		baseLogger = log.Production()
+	} else {
+		baseLogger = log.Development()
+	}
+	
+	baseLogger.Info("Starting application with custom logger...")
 	
 	// Create layer-specific loggers
 	appLogger := baseLogger.WithLayer("App")
@@ -88,27 +85,27 @@ func main() {
 	
 	// Initialize repositories with repository-specific logger
 	appLogger.Info("Initializing repositories...")
-	userRepo := repository.NewUserRepository(queries, repoLogger.WithField("repository", "User"))
-	authRepo := repository.NewAuthRepository(queries, repoLogger.WithField("repository", "Auth"))
-	contentRepo := repository.NewContentRepository(queries, repoLogger.WithField("repository", "Content"))
-	analyticsRepo := repository.NewAnalyticsRepository(queries, repoLogger.WithField("repository", "Analytics"))
+	userRepo := repository.NewUserRepository(queries, repoLogger.With("repository", "User"))
+	authRepo := repository.NewAuthRepository(queries, repoLogger.With("repository", "Auth"))
+	contentRepo := repository.NewContentRepository(queries, repoLogger.With("repository", "Content"))
+	analyticsRepo := repository.NewAnalyticsRepository(queries, repoLogger.With("repository", "Analytics"))
 	
 	// Initialize services with service-specific logger
 	appLogger.Info("Initializing services...")
-	userService := service.NewUserService(userRepo, serviceLogger.WithField("service", "User"))
+	userService := service.NewUserService(userRepo, serviceLogger.With("service", "User"))
 	authService := service.NewAuthService(userRepo, authRepo, cfg.JWTSecret, cfg.GetTokenDuration(), 
-		serviceLogger.WithField("service", "Auth"))
+		serviceLogger.With("service", "Auth"))
 	contentService := service.NewContentService(contentRepo, userRepo, 
-		serviceLogger.WithField("service", "Content"))
+		serviceLogger.With("service", "Content"))
 	analyticsService := service.NewAnalyticsService(analyticsRepo, contentRepo, userRepo, 
-		serviceLogger.WithField("service", "Analytics"))
+		serviceLogger.With("service", "Analytics"))
 	
 	// Initialize handlers with handler-specific logger
 	appLogger.Info("Initializing handlers...")
-	userHandler := user.NewHandler(userService, handlerLogger.WithField("handler", "User"))
-	authHandler := auth.NewHandler(authService, handlerLogger.WithField("handler", "Auth"))
-	contentHandler := content.NewHandler(contentService, handlerLogger.WithField("handler", "Content"))
-	analyticsHandler := analytics.NewHandler(analyticsService, handlerLogger.WithField("handler", "Analytics"))
+	userHandler := user.NewHandler(userService, handlerLogger.With("handler", "User"))
+	authHandler := auth.NewHandler(authService, handlerLogger.With("handler", "Auth"))
+	contentHandler := content.NewHandler(contentService, handlerLogger.With("handler", "Content"))
+	analyticsHandler := analytics.NewHandler(analyticsService, handlerLogger.With("handler", "Analytics"))
 	
 	// Setup server
 	appLogger.Info("Setting up server...")
