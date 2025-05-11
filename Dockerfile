@@ -30,21 +30,8 @@ WORKDIR /app
 
 # Copy the binary from the builder stage
 COPY --from=builder /app/bin/gin-sqlc-app .
-
-# Create a default environment file that can be overridden
-RUN echo "ENVIRONMENT=development\n\
-HOST=0.0.0.0\n\
-PORT=8080\n\
-DB_USERNAME=devuser\n\
-DB_PASSWORD=devpass\n\
-DB_HOSTNAME=postgres\n\
-DB_PORT=5432\n\
-DB_NAME=devdb\n\
-JWT_SECRET=askimaskimaskimasecurelongersecret1234\n\
-TOKEN_HOUR_LIFESPAN=24\n\
-API_SECRET=jagiya\n\
-VERSION=1\n\
-GIN_MODE=release" > /app/dev.env
+# Copy the environment file
+COPY dev.env .
 
 # Expose the application port
 EXPOSE 8080
