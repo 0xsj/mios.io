@@ -11,19 +11,21 @@ import (
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
 	"github.com/0xsj/gin-sqlc/log"
 	"github.com/0xsj/gin-sqlc/middleware"
+	"github.com/0xsj/gin-sqlc/pkg/redis"
 	"github.com/0xsj/gin-sqlc/pkg/response"
 	"github.com/0xsj/gin-sqlc/service"
 	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
-	config config.Config
-	router *gin.Engine
-	store  db.Querier
-	logger log.Logger
+	config      config.Config
+	router      *gin.Engine
+	store       db.Querier
+	logger      log.Logger
+	redisClient *redis.Client
 }
 
-func NewServer(config config.Config, store db.Querier, logger log.Logger) *Server {
+func NewServer(config config.Config, store db.Querier, logger log.Logger, redisClient *redis.Client) *Server {
 	
 	router := gin.Default()
 
@@ -34,10 +36,11 @@ func NewServer(config config.Config, store db.Querier, logger log.Logger) *Serve
 	router.Use(middleware.CORSMiddleware())
 
 	server := &Server{
-		config: config,
-		router: router,
-		store:  store,
-		logger: logger,
+		config:      config,
+		router:      router,
+		store:       store,
+		logger:      logger,
+		redisClient: redisClient,
 	}
 
 	logger.Info("API server initialized successfully")
@@ -148,6 +151,11 @@ func (s *Server) RegisterHandlers(
 	s.router.GET("/health", s.handleHealthCheck)
 
 	s.logger.Info("API routes registered successfully")
+}
+
+// GetRedisClient returns the Redis client
+func (s *Server) GetRedisClient() *redis.Client {
+	return s.redisClient
 }
 
 // handleHealthCheck handles the health check endpoint

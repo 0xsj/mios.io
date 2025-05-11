@@ -18,6 +18,7 @@ import (
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
 	"github.com/0xsj/gin-sqlc/log"
 	"github.com/0xsj/gin-sqlc/middleware"
+	"github.com/0xsj/gin-sqlc/pkg/redis"
 	"github.com/0xsj/gin-sqlc/repository"
 	"github.com/0xsj/gin-sqlc/service"
 	"github.com/gin-gonic/gin"
@@ -42,20 +43,25 @@ func main() {
 	}
 	
 	baseLogger.Info("Starting application with custom logger...")
-	
-	// Create layer-specific loggers
 	appLogger := baseLogger.WithLayer("App")
 	repoLogger := baseLogger.WithLayer("Repository")
 	serviceLogger := baseLogger.WithLayer("Service")
 	handlerLogger := baseLogger.WithLayer("Handler")
 	middlewareLogger := baseLogger.WithLayer("Middleware")
 	serverLogger := baseLogger.WithLayer("Server")
-	openapiLogger := baseLogger.WithLayer("OpenAPI") // Add this logger
+	openapiLogger := baseLogger.WithLayer("OpenAPI")
+	redisLogger := baseLogger.WithLayer("redis")
 	
-	// Load configuration
 	appLogger.Info("Loading configuration...")
 	cfg := config.LoadConfig("dev", ".")
 	appLogger.Debugf("Loaded configuration: %+v", cfg)
+	redisClient, err := redis.NewClient(cfg, redisLogger)
+	if err != nil {
+		appLogger.Fatalf("Failed to connect to Redis: %v", err)
+	}
+
+	defer redisClient.Close()
+
 	
 	if cfg.DBUsername == "" || cfg.DBPassword == "" || cfg.DBHost == "" || cfg.DBPort == "" || cfg.DBName == "" {
 		appLogger.Fatal("ERROR: Database configuration values are missing")
@@ -66,7 +72,6 @@ func main() {
 		cfg.DBUsername, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName)
 	appLogger.Debugf("Database URL: %s", dbURL)
 	
-	// Connect to database
 	appLogger.Info("Connecting to database...")
 	dbpool, err := pgxpool.Connect(context.Background(), dbURL)
 	if err != nil {
@@ -82,18 +87,15 @@ func main() {
 	appLogger.Info("Database connection successful!")
 	defer dbpool.Close()
 	
-	// Initialize database and components
 	appLogger.Info("Initializing database queries...")
 	queries := db.New(dbpool)
 	
-	// Initialize repositories with repository-specific logger
 	appLogger.Info("Initializing repositories...")
 	userRepo := repository.NewUserRepository(queries, repoLogger.With("repository", "User"))
 	authRepo := repository.NewAuthRepository(queries, repoLogger.With("repository", "Auth"))
 	contentRepo := repository.NewContentRepository(queries, repoLogger.With("repository", "Content"))
 	analyticsRepo := repository.NewAnalyticsRepository(queries, repoLogger.With("repository", "Analytics"))
 	
-	// Initialize services with service-specific logger
 	appLogger.Info("Initializing services...")
 	userService := service.NewUserService(userRepo, serviceLogger.With("service", "User"))
 	authService := service.NewAuthService(userRepo, authRepo, cfg.JWTSecret, cfg.GetTokenDuration(), 
@@ -103,50 +105,41 @@ func main() {
 	analyticsService := service.NewAnalyticsService(analyticsRepo, contentRepo, userRepo, 
 		serviceLogger.With("service", "Analytics"))
 	
-	// Initialize handlers with handler-specific logger
 	appLogger.Info("Initializing handlers...")
 	userHandler := user.NewHandler(userService, handlerLogger.With("handler", "User"))
 	authHandler := auth.NewHandler(authService, handlerLogger.With("handler", "Auth"))
 	contentHandler := content.NewHandler(contentService, handlerLogger.With("handler", "Content"))
 	analyticsHandler := analytics.NewHandler(analyticsService, handlerLogger.With("handler", "Analytics"))
 	
-	// Initialize OpenAPI handler
 	appLogger.Info("Initializing OpenAPI handler...")
 	openapiHandler := openapi.NewHandler(
-		authService,        // Now using interface type, not pointer
-		userService,        // Now using interface type, not pointer
-		contentService,     // Now using interface type, not pointer
-		analyticsService,   // Now using interface type, not pointer
+		authService,  
+		userService,  
+		contentService, 
+		analyticsService,
 		openapiLogger,
 	)
 	
-	// Setup server
 	appLogger.Info("Setting up server...")
-	server := api.NewServer(cfg, queries, serverLogger)
+	server := api.NewServer(cfg, queries, serverLogger, redisClient)
 	
-	// Apply middleware
 	server.Router().Use(middleware.LoggingMiddleware(middlewareLogger))
 	
-	// Get OpenAPI spec for validation middleware
 	swagger, err := openapi.GetSwagger()
 	if err == nil {
-		swagger.Servers = nil // Clear the server list to accept requests on any path
+		swagger.Servers = nil
 		
-		// Add OpenAPI validation middleware
 		appLogger.Info("Adding OpenAPI validation middleware...")
 		server.Router().Use(openapiMiddleware.OapiRequestValidator(swagger))
 	} else {
 		appLogger.Errorf("Error loading OpenAPI spec: %v", err)
 	}
 	
-	// Register routes
 	server.RegisterHandlers(userHandler, authHandler, contentHandler, authService, analyticsHandler)
 	
-	// Register OpenAPI routes
 	appLogger.Info("Registering OpenAPI handlers...")
-	openapi.RegisterOpenAPIHandlers(server.Router(), openapiHandler) // Updated function name
+	openapi.RegisterOpenAPIHandlers(server.Router(), openapiHandler) 
 	
-	// Start server
 	appLogger.Infof("Starting HTTP server on %s:%s...", cfg.Host, cfg.Port)
 	go func() {
 		addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
@@ -155,7 +148,6 @@ func main() {
 		}
 	}()
 	
-	// Wait for shutdown signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit

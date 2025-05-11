@@ -1,18 +1,78 @@
 services:
   postgres:
-    image: postgres
+    image: postgres:14
+    container_name: gin-sqlc-postgres
     environment:
       POSTGRES_DB: devdb
       POSTGRES_USER: devuser
       POSTGRES_PASSWORD: devpass
     ports:
-      - 5432:5432
-    expose:
-      - 5432          
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
     networks:
-      - postgres
-    restart: unless-stopped
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devuser -d devdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    container_name: gin-sqlc-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: gin-sqlc-app
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   environment:
+  #     # Existing environment variables
+  #     - ENVIRONMENT=development
+  #     - HOST=0.0.0.0
+  #     - PORT=8080
+  #     - DB_USERNAME=devuser
+  #     - DB_PASSWORD=devpass
+  #     - DB_HOSTNAME=postgres
+  #     - DB_PORT=5432
+  #     - DB_NAME=devdb
+  #     - JWT_SECRET=askimaskimaskimasecurelongersecret1234
+  #     - TOKEN_HOUR_LIFESPAN=24
+  #     - API_SECRET=jagiya
+  #     - VERSION=1
+  #     - GIN_MODE=release
+  #     # New Redis environment variables
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - REDIS_PASSWORD=
+  #     - REDIS_DB=0
+  #   networks:
+  #     - app-network
+  #   restart: on-failure
 
 networks:
-  postgres:
+  app-network:
     driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
