@@ -11,6 +11,8 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+var Nil = redis.Nil
+
 type Client struct {
 	rdb    *redis.Client
 	logger log.Logger
