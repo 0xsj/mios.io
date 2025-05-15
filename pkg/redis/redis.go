@@ -75,7 +75,7 @@ func (c *Client) GetJSON(ctx context.Context, key string, dest interface{}) erro
 	if err != nil {
 		return err
 	}
-	
+
 	return json.Unmarshal([]byte(val), dest)
 }
 

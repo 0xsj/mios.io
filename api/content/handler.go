@@ -35,7 +35,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		contentGroup.PATCH("/:id/position", h.UpdateContentItemPosition)
 		contentGroup.DELETE("/:id", h.DeleteContentItem)
 	}
-	
+
 	h.logger.Info("Content routes registered successfully")
 }
 

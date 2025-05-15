@@ -35,19 +35,19 @@ type PlatformInfo struct {
 }
 
 type LinkMetadataDTO struct {
-	ID           string `json:"id"`
-	URL          string `json:"url"`
-	Domain       string `json:"domain"`
-	Title        string `json:"title,omitempty"`
-	Description  string `json:"description,omitempty"`
-	FaviconURL   string `json:"favicon_url,omitempty"`
-	ImageURL     string `json:"image_url,omitempty"`
-	PlatformName string `json:"platform_name,omitempty"`
-	PlatformType string `json:"platform_type,omitempty"`
+	ID            string `json:"id"`
+	URL           string `json:"url"`
+	Domain        string `json:"domain"`
+	Title         string `json:"title,omitempty"`
+	Description   string `json:"description,omitempty"`
+	FaviconURL    string `json:"favicon_url,omitempty"`
+	ImageURL      string `json:"image_url,omitempty"`
+	PlatformName  string `json:"platform_name,omitempty"`
+	PlatformType  string `json:"platform_type,omitempty"`
 	PlatformColor string `json:"platform_color,omitempty"`
-	IsVerified   bool   `json:"is_verified"`
-	CreatedAt    string `json:"created_at,omitempty"`
-	UpdatedAt    string `json:"updated_at,omitempty"`
+	IsVerified    bool   `json:"is_verified"`
+	CreatedAt     string `json:"created_at,omitempty"`
+	UpdatedAt     string `json:"updated_at,omitempty"`
 }
 
 // PlatformRegistry defines known platforms and their metadata
@@ -65,7 +65,7 @@ var PlatformRegistry = map[string]PlatformInfo{
 		Name:        "Twitter",
 		Type:        "social",
 		Color:       "#1DA1F2",
-		Icon:        "/assets/icons/twitter.svg", 
+		Icon:        "/assets/icons/twitter.svg",
 		URLTemplate: "https://twitter.com/{username}",
 	},
 	"x.com": {
@@ -152,7 +152,7 @@ func NewLinkMetadataService(repo repository.LinkMetadataRepository, logger log.L
 
 func (s *linkMetadataService) GetMetadata(ctx context.Context, urlString string) (*LinkMetadataDTO, error) {
 	s.logger.Debugf("Getting metadata for URL: %s", urlString)
-	
+
 	// Clean and normalize the URL
 	normalizedURL, err := normalizeURL(urlString)
 	if err != nil {
@@ -162,7 +162,7 @@ func (s *linkMetadataService) GetMetadata(ctx context.Context, urlString string)
 
 	// Check if we already have metadata for this URL
 	metadata, err := s.repo.GetLinkMetadataByURL(ctx, normalizedURL)
-	
+
 	// If not found or error other than NotFound, fetch fresh metadata
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -172,7 +172,7 @@ func (s *linkMetadataService) GetMetadata(ctx context.Context, urlString string)
 		s.logger.Errorf("Error retrieving metadata: %v", err)
 		return nil, errors.Wrap(err, "Failed to retrieve metadata")
 	}
-	
+
 	// If metadata is older than a week, refresh it asynchronously
 	if metadata.UpdatedAt != nil && time.Since(*metadata.UpdatedAt) > 7*24*time.Hour {
 		s.logger.Debugf("Metadata for URL %s is older than a week, refreshing asynchronously", normalizedURL)
@@ -184,21 +184,21 @@ func (s *linkMetadataService) GetMetadata(ctx context.Context, urlString string)
 			}
 		}()
 	}
-	
+
 	return mapLinkMetadataToDTO(metadata), nil
 }
 
 func (s *linkMetadataService) FetchAndStoreMetadata(ctx context.Context, urlString string) (*LinkMetadataDTO, error) {
 	s.logger.Infof("Fetching metadata for URL: %s", urlString)
-	
+
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
 		s.logger.Warnf("Failed to parse URL: %v", err)
 		return nil, errors.NewValidationError("Invalid URL format", err)
 	}
-	
+
 	domain := parsedURL.Hostname()
-	
+
 	// Check if it's a known platform
 	var platformName, platformType, platformColor *string
 	if platform, found := PlatformRegistry[domain]; found {
@@ -207,47 +207,47 @@ func (s *linkMetadataService) FetchAndStoreMetadata(ctx context.Context, urlStri
 		platformType = &platform.Type
 		platformColor = &platform.Color
 	}
-	
+
 	// Fetch page content
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlString, nil)
 	if err != nil {
 		s.logger.Warnf("Failed to create request: %v", err)
 		return nil, errors.NewExternalServiceError("Failed to create request", err)
 	}
-	
+
 	req.Header.Set("User-Agent", "Link Metadata Service 1.0")
-	
+
 	resp, err := s.client.Do(req)
 	if err != nil {
 		s.logger.Warnf("Failed to fetch URL: %v", err)
-		
+
 		// Store minimal information if we can't fetch
 		createParams := repository.CreateLinkMetadataParams{
-			Domain:       domain,
-			URL:          urlString,
-			PlatformName: platformName,
-			PlatformType: platformType,
+			Domain:        domain,
+			URL:           urlString,
+			PlatformName:  platformName,
+			PlatformType:  platformType,
 			PlatformColor: platformColor,
-			IsVerified:   nil,
+			IsVerified:    nil,
 		}
-		
+
 		metadata, err := s.repo.CreateLinkMetadata(ctx, createParams)
 		if err != nil {
 			s.logger.Errorf("Failed to store minimal metadata: %v", err)
 			return nil, errors.Wrap(err, "Failed to store metadata")
 		}
-		
+
 		return mapLinkMetadataToDTO(metadata), nil
 	}
 	defer resp.Body.Close()
-	
+
 	// Parse HTML to extract metadata
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
 		s.logger.Warnf("Failed to parse HTML: %v", err)
 		return nil, errors.NewExternalServiceError("Failed to parse page content", err)
 	}
-	
+
 	// Extract metadata
 	var (
 		title       *string
@@ -255,18 +255,18 @@ func (s *linkMetadataService) FetchAndStoreMetadata(ctx context.Context, urlStri
 		faviconURL  *string
 		imageURL    *string
 	)
-	
+
 	// Extract metadata from HTML
 	metadata := extractMetadata(doc, urlString)
-	
+
 	if metadata.Title != "" {
 		title = &metadata.Title
 	}
-	
+
 	if metadata.Description != "" {
 		description = &metadata.Description
 	}
-	
+
 	if metadata.FaviconURL != "" {
 		faviconURL = &metadata.FaviconURL
 	} else {
@@ -274,57 +274,57 @@ func (s *linkMetadataService) FetchAndStoreMetadata(ctx context.Context, urlStri
 		defaultFavicon := fmt.Sprintf("%s://%s/favicon.ico", parsedURL.Scheme, domain)
 		faviconURL = &defaultFavicon
 	}
-	
+
 	if metadata.ImageURL != "" {
 		imageURL = &metadata.ImageURL
 	}
-	
+
 	// Check if we already have this URL in the database
 	existingMetadata, err := s.repo.GetLinkMetadataByURL(ctx, urlString)
 	if err == nil && existingMetadata != nil {
 		// Update existing metadata
 		updateParams := repository.UpdateLinkMetadataParams{
-			URL:          urlString,
-			Title:        title,
-			Description:  description,
-			FaviconURL:   faviconURL,
-			ImageURL:     imageURL,
-			PlatformName: platformName,
-			PlatformType: platformType,
+			URL:           urlString,
+			Title:         title,
+			Description:   description,
+			FaviconURL:    faviconURL,
+			ImageURL:      imageURL,
+			PlatformName:  platformName,
+			PlatformType:  platformType,
 			PlatformColor: platformColor,
-			IsVerified:   nil,
+			IsVerified:    nil,
 		}
-		
+
 		updatedMetadata, err := s.repo.UpdateLinkMetadata(ctx, updateParams)
 		if err != nil {
 			s.logger.Errorf("Failed to update metadata: %v", err)
 			return nil, errors.Wrap(err, "Failed to update metadata")
 		}
-		
+
 		s.logger.Infof("Updated metadata for URL: %s", urlString)
 		return mapLinkMetadataToDTO(updatedMetadata), nil
 	}
-	
+
 	// Create new metadata
 	createParams := repository.CreateLinkMetadataParams{
-		Domain:       domain,
-		URL:          urlString,
-		Title:        title,
-		Description:  description,
-		FaviconURL:   faviconURL,
-		ImageURL:     imageURL,
-		PlatformName: platformName,
-		PlatformType: platformType,
+		Domain:        domain,
+		URL:           urlString,
+		Title:         title,
+		Description:   description,
+		FaviconURL:    faviconURL,
+		ImageURL:      imageURL,
+		PlatformName:  platformName,
+		PlatformType:  platformType,
 		PlatformColor: platformColor,
-		IsVerified:   nil,
+		IsVerified:    nil,
 	}
-	
+
 	newMetadata, err := s.repo.CreateLinkMetadata(ctx, createParams)
 	if err != nil {
 		s.logger.Errorf("Failed to store metadata: %v", err)
 		return nil, errors.Wrap(err, "Failed to store metadata")
 	}
-	
+
 	s.logger.Infof("Created metadata for URL: %s", urlString)
 	return mapLinkMetadataToDTO(newMetadata), nil
 }
@@ -343,12 +343,12 @@ func (s *linkMetadataService) GetPlatformInfo(domain string) *PlatformInfo {
 
 func (s *linkMetadataService) ListKnownPlatforms(ctx context.Context) ([]*PlatformInfo, error) {
 	platforms := make([]*PlatformInfo, 0, len(PlatformRegistry))
-	
+
 	for _, platform := range PlatformRegistry {
 		platformCopy := platform // Create a copy to avoid reference issues
 		platforms = append(platforms, &platformCopy)
 	}
-	
+
 	return platforms, nil
 }
 
@@ -362,7 +362,7 @@ type HTMLMetadata struct {
 
 func extractMetadata(n *html.Node, baseURL string) HTMLMetadata {
 	var metadata HTMLMetadata
-	
+
 	// Extract data from head tags
 	var extractFromHead func(*html.Node)
 	extractFromHead = func(n *html.Node) {
@@ -383,7 +383,7 @@ func extractMetadata(n *html.Node, baseURL string) HTMLMetadata {
 						content = attr.Val
 					}
 				}
-				
+
 				// Handle different meta tags
 				switch strings.ToLower(property) {
 				case "description":
@@ -414,19 +414,19 @@ func extractMetadata(n *html.Node, baseURL string) HTMLMetadata {
 						href = attr.Val
 					}
 				}
-				
+
 				if rel == "icon" || rel == "shortcut icon" {
 					metadata.FaviconURL = resolveURL(baseURL, href)
 				}
 			}
 		}
-		
+
 		// Process child nodes
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			extractFromHead(c)
 		}
 	}
-	
+
 	// Find the head tag and extract metadata
 	var findHead func(*html.Node) bool
 	findHead = func(n *html.Node) bool {
@@ -434,16 +434,16 @@ func extractMetadata(n *html.Node, baseURL string) HTMLMetadata {
 			extractFromHead(n)
 			return true
 		}
-		
+
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			if findHead(c) {
 				return true
 			}
 		}
-		
+
 		return false
 	}
-	
+
 	findHead(n)
 	return metadata
 }
@@ -465,12 +465,12 @@ func resolveURL(base, ref string) string {
 	if err != nil {
 		return ref
 	}
-	
+
 	refURL, err := url.Parse(ref)
 	if err != nil {
 		return ref
 	}
-	
+
 	resolvedURL := baseURL.ResolveReference(refURL)
 	return resolvedURL.String()
 }
@@ -480,62 +480,62 @@ func normalizeURL(urlString string) (string, error) {
 	if !strings.HasPrefix(urlString, "http://") && !strings.HasPrefix(urlString, "https://") {
 		urlString = "https://" + urlString
 	}
-	
+
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
 		return "", err
 	}
-	
+
 	// Clean up URL by removing unnecessary parts
 	parsedURL.RawQuery = ""
 	parsedURL.Fragment = ""
-	
+
 	return parsedURL.String(), nil
 }
 
 func mapLinkMetadataToDTO(metadata *db.LinkMetadatum) *LinkMetadataDTO {
 	dto := &LinkMetadataDTO{
-		ID:           metadata.MetadataID.String(),
-		URL:          metadata.Url,
-		Domain:       metadata.Domain,
-		IsVerified:   metadata.IsVerified != nil && *metadata.IsVerified,
+		ID:         metadata.MetadataID.String(),
+		URL:        metadata.Url,
+		Domain:     metadata.Domain,
+		IsVerified: metadata.IsVerified != nil && *metadata.IsVerified,
 	}
-	
+
 	if metadata.Title != nil {
 		dto.Title = *metadata.Title
 	}
-	
+
 	if metadata.Description != nil {
 		dto.Description = *metadata.Description
 	}
-	
+
 	if metadata.FaviconUrl != nil {
 		dto.FaviconURL = *metadata.FaviconUrl
 	}
-	
+
 	if metadata.ImageUrl != nil {
 		dto.ImageURL = *metadata.ImageUrl
 	}
-	
+
 	if metadata.PlatformName != nil {
 		dto.PlatformName = *metadata.PlatformName
 	}
-	
+
 	if metadata.PlatformType != nil {
 		dto.PlatformType = *metadata.PlatformType
 	}
-	
+
 	if metadata.PlatformColor != nil {
 		dto.PlatformColor = *metadata.PlatformColor
 	}
-	
+
 	if metadata.CreatedAt != nil {
 		dto.CreatedAt = metadata.CreatedAt.Format(time.RFC3339)
 	}
-	
+
 	if metadata.UpdatedAt != nil {
 		dto.UpdatedAt = metadata.UpdatedAt.Format(time.RFC3339)
 	}
-	
+
 	return dto
 }

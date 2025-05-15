@@ -30,7 +30,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		metadataGroup.POST("/fetch", h.FetchLinkMetadata)
 		metadataGroup.GET("/platforms", h.ListPlatforms)
 	}
-	
+
 	h.logger.Info("Link Metadata routes registered successfully")
 }
 

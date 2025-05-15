@@ -20,28 +20,28 @@ type LinkMetadataRepository interface {
 }
 
 type CreateLinkMetadataParams struct {
-	Domain       string
-	URL          string
-	Title        *string
-	Description  *string
-	FaviconURL   *string
-	ImageURL     *string
-	PlatformName *string
-	PlatformType *string
+	Domain        string
+	URL           string
+	Title         *string
+	Description   *string
+	FaviconURL    *string
+	ImageURL      *string
+	PlatformName  *string
+	PlatformType  *string
 	PlatformColor *string
-	IsVerified   *bool
+	IsVerified    *bool
 }
 
 type UpdateLinkMetadataParams struct {
-	URL          string
-	Title        *string
-	Description  *string
-	FaviconURL   *string
-	ImageURL     *string
-	PlatformName *string
-	PlatformType *string
+	URL           string
+	Title         *string
+	Description   *string
+	FaviconURL    *string
+	ImageURL      *string
+	PlatformName  *string
+	PlatformType  *string
 	PlatformColor *string
-	IsVerified   *bool
+	IsVerified    *bool
 }
 
 type SQLCLinkMetadataRepository struct {

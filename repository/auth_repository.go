@@ -34,13 +34,13 @@ type CreateAuthParams struct {
 }
 
 type SQLCAuthRepository struct {
-	db *db.Queries
+	db     *db.Queries
 	logger log.Logger
 }
 
 func NewAuthRepository(db *db.Queries, logger log.Logger) AuthRepository {
 	return &SQLCAuthRepository{
-		db: db,
+		db:     db,
 		logger: logger,
 	}
 }
@@ -101,17 +101,17 @@ func (r *SQLCAuthRepository) UpdatePassword(ctx context.Context, userID uuid.UUI
 		PasswordHash: passwordHash,
 		Salt:         salt,
 	}
-	
+
 	start := time.Now()
 	err := r.db.UpdatePasswordHash(ctx, params)
 	duration := time.Since(start)
-	
+
 	if err != nil {
 		appErr := errors.HandleDBError(err, "password update")
 		appErr.Log(r.logger)
 		return appErr
 	}
-	
+
 	r.logger.Infof("Password updated successfully for user ID: %s in %v", userID, duration)
 	return nil
 }
@@ -124,21 +124,20 @@ func (r *SQLCAuthRepository) SetResetToken(ctx context.Context, userID uuid.UUID
 		ResetToken:          &resetToken,
 		ResetTokenExpiresAt: &expiresAt,
 	}
-	
+
 	start := time.Now()
 	err := r.db.SetResetToken(ctx, params)
 	duration := time.Since(start)
-	
+
 	if err != nil {
 		appErr := errors.HandleDBError(err, "reset token")
 		appErr.Log(r.logger)
 		return appErr
 	}
-	
+
 	r.logger.Infof("Reset token set successfully for user ID: %s in %v", userID, duration)
 	return nil
 }
-
 
 func (r *SQLCAuthRepository) ClearResetToken(ctx context.Context, userID uuid.UUID) error {
 	r.logger.Infof("Clearing reset token for user ID: %s", userID)
@@ -146,7 +145,7 @@ func (r *SQLCAuthRepository) ClearResetToken(ctx context.Context, userID uuid.UU
 	start := time.Now()
 	err := r.db.ClearResetToken(ctx, userID)
 	duration := time.Since(start)
-	
+
 	if err != nil {
 		appErr := errors.HandleDBError(err, "reset token clearing")
 		appErr.Log(r.logger)
@@ -163,17 +162,16 @@ func (r *SQLCAuthRepository) VerifyEmail(ctx context.Context, userID uuid.UUID) 
 	start := time.Now()
 	err := r.db.VerifyEmail(ctx, userID)
 	duration := time.Since(start)
-	
+
 	if err != nil {
 		appErr := errors.HandleDBError(err, "email verification")
 		appErr.Log(r.logger)
 		return appErr
 	}
-	
+
 	r.logger.Infof("Email verified successfully for user ID: %s in %v", userID, duration)
 	return nil
 }
-
 
 func (r *SQLCAuthRepository) UpdateLastLogin(ctx context.Context, userID uuid.UUID) error {
 	r.logger.Debugf("Updating last login for user ID: %s", userID)
@@ -181,13 +179,13 @@ func (r *SQLCAuthRepository) UpdateLastLogin(ctx context.Context, userID uuid.UU
 	start := time.Now()
 	err := r.db.UpdateLastLogin(ctx, userID)
 	duration := time.Since(start)
-	
+
 	if err != nil {
 		appErr := errors.HandleDBError(err, "last login update")
 		appErr.Log(r.logger)
 		return appErr
 	}
-	
+
 	r.logger.Debugf("Last login updated successfully for user ID: %s in %v", userID, duration)
 	return nil
 }
@@ -198,13 +196,13 @@ func (r *SQLCAuthRepository) IncrementFailedLoginAttempts(ctx context.Context, u
 	start := time.Now()
 	err := r.db.IncrementFailedLoginAttempts(ctx, userID)
 	duration := time.Since(start)
-	
+
 	if err != nil {
 		appErr := errors.HandleDBError(err, "failed login attempts update")
 		appErr.Log(r.logger)
 		return appErr
 	}
-	
+
 	r.logger.Warnf("Failed login attempts incremented for user ID: %s in %v", userID, duration)
 	return nil
 }
@@ -216,17 +214,17 @@ func (r *SQLCAuthRepository) SetAccountLockout(ctx context.Context, userID uuid.
 		UserID:      userID,
 		LockedUntil: &lockedUntil,
 	}
-	
+
 	start := time.Now()
 	err := r.db.SetAccountLockout(ctx, params)
 	duration := time.Since(start)
-	
+
 	if err != nil {
 		appErr := errors.HandleDBError(err, "account lockout")
 		appErr.Log(r.logger)
 		return appErr
 	}
-	
+
 	r.logger.Warnf("Account lockout set successfully for user ID: %s in %v", userID, duration)
 	return nil
 }
@@ -242,7 +240,7 @@ func (r *SQLCAuthRepository) StoreRefreshToken(ctx context.Context, userID uuid.
 	start := time.Now()
 	err := r.db.StoreRefreshToken(ctx, params)
 	duration := time.Since(start)
-	
+
 	if err != nil {
 		appErr := errors.HandleDBError(err, "refresh token storage")
 		appErr.Log(r.logger)
@@ -259,13 +257,13 @@ func (r *SQLCAuthRepository) InvalidateRefreshToken(ctx context.Context, userID 
 	start := time.Now()
 	err := r.db.InvalidateRefreshToken(ctx, userID)
 	duration := time.Since(start)
-	
+
 	if err != nil {
 		appErr := errors.HandleDBError(err, "refresh token invalidation")
 		appErr.Log(r.logger)
 		return appErr
 	}
-	
+
 	r.logger.Infof("Refresh token invalidated successfully for user ID: %s in %v", userID, duration)
 	return nil
 }
