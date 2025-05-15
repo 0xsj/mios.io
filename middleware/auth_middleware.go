@@ -120,12 +120,12 @@ func RequestLogger(logger log.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Log before request
 		logger.Infof("Request started: %s %s", c.Request.Method, c.Request.URL.Path)
-		
+
 		// Process request
 		c.Next()
-		
+
 		// Log after request
-		logger.Infof("Request completed: %s %s, status: %d", 
+		logger.Infof("Request completed: %s %s, status: %d",
 			c.Request.Method, c.Request.URL.Path, c.Writer.Status())
 	}
 }

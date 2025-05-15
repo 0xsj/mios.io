@@ -43,15 +43,15 @@ type AnalyticsEntry struct {
 
 // ContentItemAnalyticsResponse represents analytics for a content item
 type ContentItemAnalyticsResponse struct {
-	ItemID      string           `json:"item_id"`
-	TotalClicks int64            `json:"total_clicks"`
+	ItemID      string            `json:"item_id"`
+	TotalClicks int64             `json:"total_clicks"`
 	ClickData   []*AnalyticsEntry `json:"click_data"`
 }
 
 // UserAnalyticsResponse represents analytics for a user
 type UserAnalyticsResponse struct {
-	UserID      string           `json:"user_id"`
-	TotalClicks int64            `json:"total_clicks"`
+	UserID      string            `json:"user_id"`
+	TotalClicks int64             `json:"total_clicks"`
 	ClickData   []*AnalyticsEntry `json:"click_data"`
 }
 
@@ -64,28 +64,28 @@ type DailyAnalyticsEntry struct {
 
 // TimeRangeAnalyticsResponse represents analytics over a time range
 type TimeRangeAnalyticsResponse struct {
-	UserID      string                `json:"user_id"`
-	StartDate   string                `json:"start_date"`
-	EndDate     string                `json:"end_date"`
-	TotalClicks int64                 `json:"total_clicks"`
+	UserID      string                 `json:"user_id"`
+	StartDate   string                 `json:"start_date"`
+	EndDate     string                 `json:"end_date"`
+	TotalClicks int64                  `json:"total_clicks"`
 	DailyClicks []*DailyAnalyticsEntry `json:"daily_clicks"`
 }
 
 // ItemTimeRangeAnalyticsResponse represents item analytics over a time range
 type ItemTimeRangeAnalyticsResponse struct {
-	ItemID      string                `json:"item_id"`
-	StartDate   string                `json:"start_date"`
-	EndDate     string                `json:"end_date"`
-	TotalClicks int64                 `json:"total_clicks"`
+	ItemID      string                 `json:"item_id"`
+	StartDate   string                 `json:"start_date"`
+	EndDate     string                 `json:"end_date"`
+	TotalClicks int64                  `json:"total_clicks"`
 	DailyClicks []*DailyAnalyticsEntry `json:"daily_clicks"`
 }
 
 // PageViewAnalyticsResponse represents page view analytics over a time range
 type PageViewAnalyticsResponse struct {
-	UserID     string                `json:"user_id"`
-	StartDate  string                `json:"start_date"`
-	EndDate    string                `json:"end_date"`
-	TotalViews int64                 `json:"total_views"`
+	UserID     string                 `json:"user_id"`
+	StartDate  string                 `json:"start_date"`
+	EndDate    string                 `json:"end_date"`
+	TotalViews int64                  `json:"total_views"`
 	DailyViews []*DailyAnalyticsEntry `json:"daily_views"`
 }
 
@@ -115,14 +115,14 @@ type ReferrerAnalyticsResponse struct {
 
 // ProfileDashboardResponse represents a comprehensive analytics dashboard
 type ProfileDashboardResponse struct {
-	UserID         string                `json:"user_id"`
-	Period         string                `json:"period"`
-	TotalViews     int64                 `json:"total_views"`
-	TotalClicks    int64                 `json:"total_clicks"`
-	UniqueVisitors int64                 `json:"unique_visitors"`
-	ConversionRate float64               `json:"conversion_rate"`
+	UserID         string                 `json:"user_id"`
+	Period         string                 `json:"period"`
+	TotalViews     int64                  `json:"total_views"`
+	TotalClicks    int64                  `json:"total_clicks"`
+	UniqueVisitors int64                  `json:"unique_visitors"`
+	ConversionRate float64                `json:"conversion_rate"`
 	DailyViews     []*DailyAnalyticsEntry `json:"daily_views"`
 	DailyVisitors  []*DailyAnalyticsEntry `json:"daily_visitors"`
 	TopItems       []*TopContentItemEntry `json:"top_items"`
-	TopReferrers   []*ReferrerEntry      `json:"top_referrers"`
+	TopReferrers   []*ReferrerEntry       `json:"top_referrers"`
 }

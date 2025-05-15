@@ -6,6 +6,7 @@ import (
 	"github.com/0xsj/gin-sqlc/api/analytics"
 	"github.com/0xsj/gin-sqlc/api/auth"
 	"github.com/0xsj/gin-sqlc/api/content"
+	"github.com/0xsj/gin-sqlc/api/link_metadata" // Added import
 	"github.com/0xsj/gin-sqlc/api/user"
 	"github.com/0xsj/gin-sqlc/config"
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
@@ -26,11 +27,11 @@ type Server struct {
 }
 
 func NewServer(config config.Config, store db.Querier, logger log.Logger, redisClient *redis.Client) *Server {
-	
+
 	router := gin.Default()
 
 	router.SetTrustedProxies([]string{"127.0.0.1"})
-	
+
 	router.Use(middleware.RequestLogger(logger))
 	router.Use(middleware.Recovery(logger))
 	router.Use(middleware.CORSMiddleware())
@@ -53,6 +54,7 @@ func (s *Server) RegisterHandlers(
 	contentHandler *content.Handler,
 	authService service.AuthService,
 	analyticsHandler *analytics.Handler,
+	linkMetadataHandler *link_metadata.Handler, // Added parameter
 ) {
 	s.logger.Info("Registering API routes")
 
@@ -77,13 +79,20 @@ func (s *Server) RegisterHandlers(
 		publicUserGroup := publicRoutes.Group("/users")
 		{
 			publicUserGroup.GET("/username/:username", userHandler.GetUserByUsername)
-			publicUserGroup.GET("/handle/:handle", userHandler.GetUserByHandle) // Fixed function name
+			publicUserGroup.GET("/handle/:handle", userHandler.GetUserByHandle)
 		}
 
 		// Public content routes
 		publicContentGroup := publicRoutes.Group("/content")
 		{
 			publicContentGroup.GET("/user/:user_id", contentHandler.GetUserContentItems)
+		}
+
+		// Public link metadata routes
+		publicMetadataGroup := publicRoutes.Group("/link-metadata")
+		{
+			publicMetadataGroup.GET("/platforms", linkMetadataHandler.ListPlatforms)
+			publicMetadataGroup.GET("/url", linkMetadataHandler.GetLinkMetadata)
 		}
 	}
 
@@ -107,7 +116,7 @@ func (s *Server) RegisterHandlers(
 			userGroup.DELETE("/:id", userHandler.DeleteUser)
 		}
 
-		// Content routes 
+		// Content routes
 		contentGroup := protectedRoutes.Group("/content")
 		{
 			// Some operations might need email verification
@@ -119,7 +128,7 @@ func (s *Server) RegisterHandlers(
 				verifiedContentGroup.PATCH("/:id/position", contentHandler.UpdateContentItemPosition)
 				verifiedContentGroup.DELETE("/:id", contentHandler.DeleteContentItem)
 			}
-			
+
 			// Some operations might not need email verification
 			contentGroup.GET("/:id", contentHandler.GetContentItem)
 		}
@@ -137,6 +146,12 @@ func (s *Server) RegisterHandlers(
 			analyticsGroup.GET("/users/:id/dashboard", analyticsHandler.GetProfileDashboard)
 			analyticsGroup.POST("/users/:id/referrers", analyticsHandler.GetReferrerAnalytics)
 		}
+
+		// Protected link metadata routes
+		linkMetadataGroup := protectedRoutes.Group("/link-metadata")
+		{
+			linkMetadataGroup.POST("/fetch", linkMetadataHandler.FetchLinkMetadata)
+		}
 	}
 
 	// Admin routes - require authentication and admin role
@@ -144,7 +159,7 @@ func (s *Server) RegisterHandlers(
 	adminRoutes.Use(adminMiddleware)
 	{
 		adminRoutes.PATCH("/users/:id/premium", userHandler.UpdatePremiumStatus)
-		adminRoutes.PATCH("/users/:id/admin", userHandler.UpdateAdminStatus) // Fixed function name
+		adminRoutes.PATCH("/users/:id/admin", userHandler.UpdateAdminStatus)
 	}
 
 	// Health check endpoint
@@ -161,7 +176,7 @@ func (s *Server) GetRedisClient() *redis.Client {
 // handleHealthCheck handles the health check endpoint
 func (s *Server) handleHealthCheck(c *gin.Context) {
 	s.logger.Debug("Health check endpoint called")
-	
+
 	// Gather system health information
 	healthInfo := map[string]interface{}{
 		"status":      "ok",
@@ -169,7 +184,7 @@ func (s *Server) handleHealthCheck(c *gin.Context) {
 		"environment": s.config.Environment,
 		"version":     s.config.Version,
 	}
-	
+
 	response.Success(c, healthInfo, "Service is healthy")
 }
 

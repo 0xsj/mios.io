@@ -72,8 +72,8 @@ type UserResponse struct {
 
 // TokenResponse represents authentication tokens in response payloads
 type TokenResponse struct {
-	AccessToken  string       `json:"access_token"`
-	RefreshToken string       `json:"refresh_token"`
-	ExpiresAt    int64        `json:"expires_at"`
+	AccessToken  string        `json:"access_token"`
+	RefreshToken string        `json:"refresh_token"`
+	ExpiresAt    int64         `json:"expires_at"`
 	User         *UserResponse `json:"user"`
 }

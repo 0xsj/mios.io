@@ -83,7 +83,7 @@ func (s *Store) Get(ctx context.Context, sessionID string) (*Session, error) {
 	data, err := s.client.Get(ctx, key)
 	if err != nil {
 		if err == redis.Nil {
-			return nil, nil 
+			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to get session: %w", err)
 	}
@@ -95,7 +95,7 @@ func (s *Store) Get(ctx context.Context, sessionID string) (*Session, error) {
 	}
 	// Check if session has expired
 	if time.Now().After(session.ExpiresAt) {
-		s.Delete(ctx, sessionID) 
+		s.Delete(ctx, sessionID)
 		return nil, nil
 	}
 
@@ -129,10 +129,9 @@ func (s *Store) Delete(ctx context.Context, sessionID string) error {
 	return nil
 }
 
-
 func (s *Store) DeleteByUserID(ctx context.Context, userID string) error {
 	userPattern := fmt.Sprintf("user:%s:sessions:*", userID)
-	
+
 	// Find all sessions for this user
 	keys, err := s.client.Keys(ctx, userPattern)
 	if err != nil {
@@ -161,7 +160,7 @@ func (s *Store) Refresh(ctx context.Context, sessionID string, expiration time.D
 	}
 
 	key := SessionPrefix + sessionID
-	
+
 	// Get the current session
 	session, err := s.Get(ctx, sessionID)
 	if err != nil {
@@ -173,7 +172,7 @@ func (s *Store) Refresh(ctx context.Context, sessionID string, expiration time.D
 
 	// Update expiration
 	session.ExpiresAt = time.Now().Add(expiration)
-	
+
 	// Serialize and store the updated session
 	data, err := json.Marshal(session)
 	if err != nil {

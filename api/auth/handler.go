@@ -35,7 +35,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		authGroup.POST("/verify-email", h.VerifyEmail)
 		authGroup.POST("/logout", h.Logout)
 	}
-	
+
 	h.logger.Info("Auth routes registered successfully")
 }
 
@@ -151,7 +151,7 @@ func (h *Handler) ForgotPassword(c *gin.Context) {
 	if err != nil {
 		// Log but don't expose failure details to client for security
 		h.logger.Warnf("Failed to generate reset token: %v", err)
-		
+
 		// For security, always return the same message regardless of whether the email exists
 		response.Success(c, nil, "If the email exists, a reset link has been sent")
 		return

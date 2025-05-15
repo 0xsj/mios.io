@@ -48,7 +48,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 		response.Error(c, response.ErrBadRequestResponse, err.Error())
 		return
 	}
-	
+
 	h.logger.Debugf("Received create user request: %+v", req)
 
 	// Default handle to username if not provided
@@ -135,7 +135,7 @@ func (h *Handler) GetUser(c *gin.Context) {
 func (h *Handler) GetUserByUsername(c *gin.Context) {
 	username := c.Param("username")
 	h.logger.Debugf("GetUserByUsername handler called for username: %s", username)
-	
+
 	if username == "" {
 		h.logger.Warn("Invalid username parameter: empty value")
 		response.Error(c, response.ErrBadRequestResponse, "Username cannot be empty")
@@ -173,7 +173,7 @@ func (h *Handler) GetUserByUsername(c *gin.Context) {
 func (h *Handler) GetUserByHandle(c *gin.Context) {
 	handle := c.Param("handle")
 	h.logger.Debugf("GetUserByHandle handler called for handle: %s", handle)
-	
+
 	if handle == "" {
 		h.logger.Warn("Invalid handle parameter: empty value")
 		response.Error(c, response.ErrBadRequestResponse, "Handle cannot be empty")
@@ -211,7 +211,7 @@ func (h *Handler) GetUserByHandle(c *gin.Context) {
 func (h *Handler) GetUserByEmail(c *gin.Context) {
 	email := c.Param("email")
 	h.logger.Debugf("GetUserByEmail handler called for email: %s", email)
-	
+
 	if email == "" {
 		h.logger.Warn("Invalid email parameter: empty value")
 		response.Error(c, response.ErrBadRequestResponse, "Email cannot be empty")

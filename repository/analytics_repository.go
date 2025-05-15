@@ -199,7 +199,7 @@ func (r *SQLCAnalyticsRepository) CreatePageViewEntry(ctx context.Context, param
 }
 
 func (r *SQLCAnalyticsRepository) GetUserAnalyticsByTimeRange(ctx context.Context, params TimeRangeParams) ([]DailyAnalytics, error) {
-	r.logger.Debugf("Getting user analytics for user ID: %s from %s to %s", 
+	r.logger.Debugf("Getting user analytics for user ID: %s from %s to %s",
 		params.UserID, params.StartDate.Format(time.RFC3339), params.EndDate.Format(time.RFC3339))
 
 	sqlcParams := db.GetUserAnalyticsByTimeRangeParams{
@@ -231,7 +231,7 @@ func (r *SQLCAnalyticsRepository) GetUserAnalyticsByTimeRange(ctx context.Contex
 }
 
 func (r *SQLCAnalyticsRepository) GetItemAnalyticsByTimeRange(ctx context.Context, params ItemTimeRangeParams) ([]DailyAnalytics, error) {
-	r.logger.Debugf("Getting item analytics for item ID: %s from %s to %s", 
+	r.logger.Debugf("Getting item analytics for item ID: %s from %s to %s",
 		params.ItemID, params.StartDate.Format(time.RFC3339), params.EndDate.Format(time.RFC3339))
 
 	sqlcParams := db.GetItemAnalyticsByTimeRangeParams{
@@ -263,7 +263,7 @@ func (r *SQLCAnalyticsRepository) GetItemAnalyticsByTimeRange(ctx context.Contex
 }
 
 func (r *SQLCAnalyticsRepository) GetProfilePageViewsByDate(ctx context.Context, params TimeRangeParams) ([]DailyAnalytics, error) {
-	r.logger.Debugf("Getting profile page views for user ID: %s from %s to %s", 
+	r.logger.Debugf("Getting profile page views for user ID: %s from %s to %s",
 		params.UserID, params.StartDate.Format(time.RFC3339), params.EndDate.Format(time.RFC3339))
 
 	sqlcParams := db.GetProfilePageViewsByDateParams{
@@ -361,7 +361,7 @@ func (r *SQLCAnalyticsRepository) GetReferrerAnalytics(ctx context.Context, para
 }
 
 func (r *SQLCAnalyticsRepository) GetUniqueVisitors(ctx context.Context, params TimeRangeParams) (int64, error) {
-	r.logger.Debugf("Getting unique visitors count for user ID: %s from %s to %s", 
+	r.logger.Debugf("Getting unique visitors count for user ID: %s from %s to %s",
 		params.UserID, params.StartDate.Format(time.RFC3339), params.EndDate.Format(time.RFC3339))
 
 	sqlcParams := db.GetUniqueVisitorsParams{
@@ -385,7 +385,7 @@ func (r *SQLCAnalyticsRepository) GetUniqueVisitors(ctx context.Context, params 
 }
 
 func (r *SQLCAnalyticsRepository) GetUniqueVisitorsByDay(ctx context.Context, params TimeRangeParams) ([]VisitorAnalytics, error) {
-	r.logger.Debugf("Getting unique visitors by day for user ID: %s from %s to %s", 
+	r.logger.Debugf("Getting unique visitors by day for user ID: %s from %s to %s",
 		params.UserID, params.StartDate.Format(time.RFC3339), params.EndDate.Format(time.RFC3339))
 
 	sqlcParams := db.GetUniqueVisitorsByDayParams{

@@ -391,7 +391,7 @@ func (s *analyticsService) GetUserAnalytics(ctx context.Context, userIDStr strin
 }
 
 func (s *analyticsService) GetUserAnalyticsByTimeRange(ctx context.Context, userIDStr string, input TimeRangeInput) (*TimeRangeAnalyticsDTO, error) {
-	s.logger.Debugf("Getting user analytics by time range for user ID: %s from %s to %s", 
+	s.logger.Debugf("Getting user analytics by time range for user ID: %s from %s to %s",
 		userIDStr, input.StartDate, input.EndDate)
 
 	userID, err := uuid.Parse(userIDStr)
@@ -450,9 +450,9 @@ func (s *analyticsService) GetUserAnalyticsByTimeRange(ctx context.Context, user
 		}
 	}
 
-	s.logger.Debugf("Retrieved %d days of analytics for user ID: %s with total clicks: %d", 
+	s.logger.Debugf("Retrieved %d days of analytics for user ID: %s with total clicks: %d",
 		len(dailyClicks), userIDStr, totalClicks)
-	
+
 	return &TimeRangeAnalyticsDTO{
 		UserID:      userIDStr,
 		StartDate:   input.StartDate,
@@ -463,7 +463,7 @@ func (s *analyticsService) GetUserAnalyticsByTimeRange(ctx context.Context, user
 }
 
 func (s *analyticsService) GetItemAnalyticsByTimeRange(ctx context.Context, itemIDStr string, input TimeRangeInput) (*ItemTimeRangeAnalyticsDTO, error) {
-	s.logger.Debugf("Getting item analytics by time range for item ID: %s from %s to %s", 
+	s.logger.Debugf("Getting item analytics by time range for item ID: %s from %s to %s",
 		itemIDStr, input.StartDate, input.EndDate)
 
 	itemID, err := uuid.Parse(itemIDStr)
@@ -522,9 +522,9 @@ func (s *analyticsService) GetItemAnalyticsByTimeRange(ctx context.Context, item
 		}
 	}
 
-	s.logger.Debugf("Retrieved %d days of analytics for item ID: %s with total clicks: %d", 
+	s.logger.Debugf("Retrieved %d days of analytics for item ID: %s with total clicks: %d",
 		len(dailyClicks), itemIDStr, totalClicks)
-	
+
 	return &ItemTimeRangeAnalyticsDTO{
 		ItemID:      itemIDStr,
 		StartDate:   input.StartDate,
@@ -535,7 +535,7 @@ func (s *analyticsService) GetItemAnalyticsByTimeRange(ctx context.Context, item
 }
 
 func (s *analyticsService) GetProfilePageViewsByTimeRange(ctx context.Context, userIDStr string, input TimeRangeInput) (*PageViewAnalyticsDTO, error) {
-	s.logger.Debugf("Getting profile page views by time range for user ID: %s from %s to %s", 
+	s.logger.Debugf("Getting profile page views by time range for user ID: %s from %s to %s",
 		userIDStr, input.StartDate, input.EndDate)
 
 	userID, err := uuid.Parse(userIDStr)
@@ -594,9 +594,9 @@ func (s *analyticsService) GetProfilePageViewsByTimeRange(ctx context.Context, u
 		}
 	}
 
-	s.logger.Debugf("Retrieved %d days of page views for user ID: %s with total views: %d", 
+	s.logger.Debugf("Retrieved %d days of page views for user ID: %s with total views: %d",
 		len(views), userIDStr, totalViews)
-	
+
 	return &PageViewAnalyticsDTO{
 		UserID:     userIDStr,
 		StartDate:  input.StartDate,
@@ -763,9 +763,9 @@ func (s *analyticsService) GetProfileDashboard(ctx context.Context, userIDStr st
 
 	periodLabel := fmt.Sprintf("Last %d days", days)
 
-	s.logger.Infof("Retrieved dashboard data for user ID: %s with %d views, %d clicks, and %d unique visitors", 
+	s.logger.Infof("Retrieved dashboard data for user ID: %s with %d views, %d clicks, and %d unique visitors",
 		userIDStr, totalViews, totalClicks, uniqueVisitors)
-	
+
 	return &ProfileDashboardDTO{
 		UserID:         userIDStr,
 		Period:         periodLabel,
@@ -782,7 +782,7 @@ func (s *analyticsService) GetProfileDashboard(ctx context.Context, userIDStr st
 
 // Referrer analytics
 func (s *analyticsService) GetReferrerAnalytics(ctx context.Context, userIDStr string, input TimeRangeInput) (*ReferrerAnalyticsDTO, error) {
-	s.logger.Debugf("Getting referrer analytics for user ID: %s from %s to %s", 
+	s.logger.Debugf("Getting referrer analytics for user ID: %s from %s to %s",
 		userIDStr, input.StartDate, input.EndDate)
 
 	userID, err := uuid.Parse(userIDStr)
@@ -856,9 +856,9 @@ func (s *analyticsService) GetReferrerAnalytics(ctx context.Context, userIDStr s
 		}
 	}
 
-	s.logger.Debugf("Retrieved %d referrers for user ID: %s with total count: %d", 
+	s.logger.Debugf("Retrieved %d referrers for user ID: %s with total count: %d",
 		len(referrersDTO), userIDStr, totalCount)
-	
+
 	return &ReferrerAnalyticsDTO{
 		UserID:     userIDStr,
 		StartDate:  input.StartDate,

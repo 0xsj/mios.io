@@ -39,7 +39,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		analyticsGroup.GET("/users/:id/dashboard", h.GetProfileDashboard)
 		analyticsGroup.POST("/users/:id/referrers", h.GetReferrerAnalytics)
 	}
-	
+
 	h.logger.Info("Analytics routes registered successfully")
 }
 
@@ -122,7 +122,7 @@ func (h *Handler) GetContentItemAnalytics(c *gin.Context) {
 		return
 	}
 
-	h.logger.Debugf("Retrieved analytics for content item ID: %s with %d entries", 
+	h.logger.Debugf("Retrieved analytics for content item ID: %s with %d entries",
 		itemID, len(analytics.ClickData))
 	response.Success(c, analytics, "Content item analytics retrieved successfully")
 }
@@ -142,7 +142,7 @@ func (h *Handler) GetUserAnalytics(c *gin.Context) {
 		return
 	}
 
-	h.logger.Debugf("Retrieved analytics for user ID: %s with %d entries", 
+	h.logger.Debugf("Retrieved analytics for user ID: %s with %d entries",
 		userID, len(analytics.ClickData))
 	response.Success(c, analytics, "User analytics retrieved successfully")
 }
@@ -174,7 +174,7 @@ func (h *Handler) GetUserAnalyticsByTimeRange(c *gin.Context) {
 		return
 	}
 
-	h.logger.Debugf("Retrieved time range analytics for user ID: %s with %d daily entries", 
+	h.logger.Debugf("Retrieved time range analytics for user ID: %s with %d daily entries",
 		userID, len(analytics.DailyClicks))
 	response.Success(c, analytics, "User time range analytics retrieved successfully")
 }
@@ -206,7 +206,7 @@ func (h *Handler) GetItemAnalyticsByTimeRange(c *gin.Context) {
 		return
 	}
 
-	h.logger.Debugf("Retrieved time range analytics for item ID: %s with %d daily entries", 
+	h.logger.Debugf("Retrieved time range analytics for item ID: %s with %d daily entries",
 		itemID, len(analytics.DailyClicks))
 	response.Success(c, analytics, "Item time range analytics retrieved successfully")
 }
@@ -238,7 +238,7 @@ func (h *Handler) GetProfilePageViewsByTimeRange(c *gin.Context) {
 		return
 	}
 
-	h.logger.Debugf("Retrieved profile page views for user ID: %s with %d daily entries", 
+	h.logger.Debugf("Retrieved profile page views for user ID: %s with %d daily entries",
 		userID, len(analytics.DailyViews))
 	response.Success(c, analytics, "Profile page views retrieved successfully")
 }
@@ -263,7 +263,7 @@ func (h *Handler) GetProfileDashboard(c *gin.Context) {
 		return
 	}
 
-	h.logger.Debugf("Retrieved profile dashboard for user ID: %s with %d daily views", 
+	h.logger.Debugf("Retrieved profile dashboard for user ID: %s with %d daily views",
 		userID, len(dashboard.DailyViews))
 	response.Success(c, dashboard, "Profile dashboard retrieved successfully")
 }
@@ -295,7 +295,7 @@ func (h *Handler) GetReferrerAnalytics(c *gin.Context) {
 		return
 	}
 
-	h.logger.Debugf("Retrieved referrer analytics for user ID: %s with %d referrers", 
+	h.logger.Debugf("Retrieved referrer analytics for user ID: %s with %d referrers",
 		userID, len(analytics.Referrers))
 	response.Success(c, analytics, "Referrer analytics retrieved successfully")
 }
