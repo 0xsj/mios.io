@@ -63,6 +63,22 @@ type ContentItem struct {
 	UpdatedAt    *time.Time   `json:"updated_at"`
 }
 
+type LinkMetadatum struct {
+	MetadataID    uuid.UUID  `json:"metadata_id"`
+	Domain        string     `json:"domain"`
+	Url           string     `json:"url"`
+	Title         *string    `json:"title"`
+	Description   *string    `json:"description"`
+	FaviconUrl    *string    `json:"favicon_url"`
+	ImageUrl      *string    `json:"image_url"`
+	PlatformName  *string    `json:"platform_name"`
+	PlatformType  *string    `json:"platform_type"`
+	PlatformColor *string    `json:"platform_color"`
+	IsVerified    *bool      `json:"is_verified"`
+	CreatedAt     *time.Time `json:"created_at"`
+	UpdatedAt     *time.Time `json:"updated_at"`
+}
+
 type OauthAccount struct {
 	OauthID        uuid.UUID  `json:"oauth_id"`
 	UserID         uuid.UUID  `json:"user_id"`

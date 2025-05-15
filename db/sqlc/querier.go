@@ -17,9 +17,11 @@ type Querier interface {
 	CreateAnalyticsEntry(ctx context.Context, arg CreateAnalyticsEntryParams) (*Analytic, error)
 	CreateAuth(ctx context.Context, arg CreateAuthParams) error
 	CreateContentItem(ctx context.Context, arg CreateContentItemParams) (*ContentItem, error)
+	CreateLinkMetadata(ctx context.Context, arg CreateLinkMetadataParams) (*LinkMetadatum, error)
 	CreatePageViewEntry(ctx context.Context, arg CreatePageViewEntryParams) (*Analytic, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (*User, error)
 	DeleteContentItem(ctx context.Context, itemID uuid.UUID) error
+	DeleteLinkMetadata(ctx context.Context, metadataID uuid.UUID) error
 	DeleteUser(ctx context.Context, userID uuid.UUID) error
 	GetAuthByUserID(ctx context.Context, userID uuid.UUID) (*Auth, error)
 	GetContentItem(ctx context.Context, itemID uuid.UUID) (*ContentItem, error)
@@ -28,6 +30,8 @@ type Querier interface {
 	// Basic analytics queries
 	GetItemAnalytics(ctx context.Context, arg GetItemAnalyticsParams) ([]*Analytic, error)
 	GetItemAnalyticsByTimeRange(ctx context.Context, arg GetItemAnalyticsByTimeRangeParams) ([]*GetItemAnalyticsByTimeRangeRow, error)
+	GetLinkMetadataByDomain(ctx context.Context, domain string) ([]*LinkMetadatum, error)
+	GetLinkMetadataByURL(ctx context.Context, url string) (*LinkMetadatum, error)
 	GetProfilePageViews(ctx context.Context, userID uuid.UUID) (int64, error)
 	GetProfilePageViewsByDate(ctx context.Context, arg GetProfilePageViewsByDateParams) ([]*GetProfilePageViewsByDateRow, error)
 	GetReferrerAnalytics(ctx context.Context, arg GetReferrerAnalyticsParams) ([]*GetReferrerAnalyticsRow, error)
@@ -56,6 +60,7 @@ type Querier interface {
 	UpdateEmail(ctx context.Context, arg UpdateEmailParams) error
 	UpdateHandle(ctx context.Context, arg UpdateHandleParams) error
 	UpdateLastLogin(ctx context.Context, userID uuid.UUID) error
+	UpdateLinkMetadata(ctx context.Context, arg UpdateLinkMetadataParams) (*LinkMetadatum, error)
 	UpdatePasswordHash(ctx context.Context, arg UpdatePasswordHashParams) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error
 	UpdateUserAdminStatus(ctx context.Context, arg UpdateUserAdminStatusParams) error
