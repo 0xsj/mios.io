@@ -95,7 +95,11 @@ func (s *Store) Get(ctx context.Context, sessionID string) (*Session, error) {
 	}
 	// Check if session has expired
 	if time.Now().After(session.ExpiresAt) {
-		s.Delete(ctx, sessionID)
+		// FIX: Handle the error from Delete
+		if err := s.Delete(ctx, sessionID); err != nil {
+			s.logger.Warnf("Failed to delete expired session: %v", err)
+			// Continue despite the error since we're just cleaning up
+		}
 		return nil, nil
 	}
 

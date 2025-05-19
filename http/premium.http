@@ -1,0 +1,155 @@
+@baseUrl = http://localhost:8081
+@contentType = application/json
+
+### First, login as admin
+# @name adminLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "admin@example.com",
+  "password": "AdminPassword123!"
+}
+
+### Store admin token
+@adminToken = {{adminLogin.response.body.data.access_token}}
+
+### Create test users with descriptive usernames for the test
+# @name createPremiumUser
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+  "username": "premiumUser",
+  "handle": "premium_user",
+  "email": "premium@example.com",
+  "password": "Premium123!",
+  "first_name": "Premium",
+  "last_name": "User"
+}
+
+### Store the premium user ID
+@premiumUserId = {{createPremiumUser.response.body.data.id}}
+
+### Create regular test user
+# @name createRegularUser
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+  "username": "regularUser",
+  "handle": "regular_user",
+  "email": "regular@example.com",
+  "password": "Regular123!",
+  "first_name": "Regular",
+  "last_name": "User"
+}
+
+### Store the regular user ID
+@regularUserId = {{createRegularUser.response.body.data.id}}
+
+### Make the premium user actually premium
+PATCH {{baseUrl}}/api/admin/users/{{premiumUserId}}/premium
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+  "is_premium": true
+}
+
+### Login as the premium user
+# @name premiumLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "premium@example.com",
+  "password": "Premium123!"
+}
+
+### Store the premium token
+@premiumToken = {{premiumLogin.response.body.data.access_token}}
+
+### Login as the regular user
+# @name regularLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "regular@example.com",
+  "password": "Regular123!"
+}
+
+### Store the regular token
+@regularToken = {{regularLogin.response.body.data.access_token}}
+
+### Create content with premium user (should have access to premium features)
+POST {{baseUrl}}/api/content
+Content-Type: {{contentType}}
+Authorization: Bearer {{premiumToken}}
+
+{
+  "user_id": "{{premiumUserId}}",
+  "content_id": "premium-feature-1",
+  "content_type": "premium_widget",
+  "title": "Premium Feature",
+  "desktop_x": 0,
+  "desktop_y": 0,
+  "desktop_style": "3x3",
+  "content_data": {
+    "premium_feature": true,
+    "custom_styling": {
+      "background": "gradient",
+      "colors": ["#FF5F6D", "#FFC371"]
+    }
+  }
+}
+
+### Try the same with regular user
+POST {{baseUrl}}/api/content
+Content-Type: {{contentType}}
+Authorization: Bearer {{regularToken}}
+
+{
+  "user_id": "{{regularUserId}}",
+  "content_id": "regular-feature-1",
+  "content_type": "premium_widget",
+  "title": "Attempted Premium Feature",
+  "desktop_x": 0,
+  "desktop_y": 0,
+  "desktop_style": "3x3",
+  "content_data": {
+    "premium_feature": true
+  }
+}
+
+### Create advanced analytics with premium user
+POST {{baseUrl}}/api/analytics/users/{{premiumUserId}}/time-range
+Content-Type: {{contentType}}
+Authorization: Bearer {{premiumToken}}
+
+{
+  "start_date": "2025-01-01T00:00:00Z",
+  "end_date": "2025-12-31T23:59:59Z",
+  "limit": 50
+}
+
+### Try advanced analytics with regular user
+POST {{baseUrl}}/api/analytics/users/{{regularUserId}}/time-range
+Content-Type: {{contentType}}
+Authorization: Bearer {{regularToken}}
+
+{
+  "start_date": "2025-01-01T00:00:00Z",
+  "end_date": "2025-12-31T23:59:59Z",
+  "limit": 50
+}
+
+### Clean up: Delete test users
+DELETE {{baseUrl}}/api/users/{{premiumUserId}}
+Authorization: Bearer {{adminToken}}
+
+DELETE {{baseUrl}}/api/users/{{regularUserId}}
+Authorization: Bearer {{adminToken}}

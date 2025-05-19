@@ -1,4 +1,4 @@
-@baseUrl = http://localhost:8080
+@baseUrl = http://localhost:8081
 @contentType = application/json
 
 ### First, login to get the token
@@ -8,10 +8,10 @@ Content-Type: {{contentType}}
 
 {
   "email": "test@example.com",
-  "password": "NewPassword123!"
+  "password": "Password123!"
 }
 
-### Store tokens and IDs from login response
+### Store tokens and user ID
 @accessToken = {{login.response.body.data.access_token}}
 @userId = {{login.response.body.data.user.id}}
 
@@ -25,7 +25,7 @@ GET {{baseUrl}}/api/users/username/testuser
 ### Get User by Handle
 GET {{baseUrl}}/api/users/handle/testuser
 
-### Get User by Email
+### Get User by Email (requires auth)
 GET {{baseUrl}}/api/users/email/test@example.com
 Authorization: Bearer {{accessToken}}
 
@@ -37,7 +37,8 @@ Authorization: Bearer {{accessToken}}
 {
   "first_name": "Updated",
   "last_name": "User",
-  "bio": "This bio has been updated"
+  "bio": "This bio has been updated via API test",
+  "profile_image_url": "https://via.placeholder.com/200"
 }
 
 ### Update Handle
@@ -46,7 +47,7 @@ Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
 {
-  "handle": "newhandle"
+  "handle": "updated-handle"
 }
 
 ### Update Onboarded Status
@@ -58,6 +59,61 @@ Authorization: Bearer {{accessToken}}
   "onboarded": true
 }
 
-### Delete User
-DELETE {{baseUrl}}/api/users/{{userId}}
-Authorization: Bearer {{accessToken}}
+### Attempting to update user without auth (should fail)
+PUT {{baseUrl}}/api/users/{{userId}}
+Content-Type: {{contentType}}
+
+{
+  "first_name": "Unauthorized",
+  "last_name": "Update"
+}
+
+### Register a second test user
+# @name register2
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "username": "testuser2",
+  "handle": "testuser2",
+  "email": "test2@example.com",
+  "password": "Password123!"
+}
+
+### Store the second user ID
+@userId2 = {{register2.response.body.data.id}}
+
+### Login as admin (assuming you have an admin user)
+# @name adminLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "admin@example.com",
+  "password": "AdminPassword123!"
+}
+
+### Store admin token
+@adminToken = {{adminLogin.response.body.data.access_token}}
+
+### Update Premium Status (Admin only)
+PATCH {{baseUrl}}/api/admin/users/{{userId2}}/premium
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+  "is_premium": true
+}
+
+### Update Admin Status (Admin only)
+PATCH {{baseUrl}}/api/admin/users/{{userId2}}/admin
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+  "is_admin": true
+}
+
+### Delete Test User 2
+DELETE {{baseUrl}}/api/users/{{userId2}}
+Authorization: Bearer {{adminToken}}

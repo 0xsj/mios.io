@@ -76,3 +76,8 @@ SET
     refresh_token = NULL,
     updated_at = CURRENT_TIMESTAMP
 WHERE user_id = $1;
+
+-- name: GetAuthByVerificationToken :one
+SELECT * FROM auth
+WHERE verification_token = $1
+LIMIT 1;

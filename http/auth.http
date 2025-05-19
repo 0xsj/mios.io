@@ -1,45 +1,53 @@
-@baseUrl = http://localhost:8080
+@baseUrl = http://localhost:8081
 @contentType = application/json
 
-### Register User
+### User Registration
+# @name register
 POST {{baseUrl}}/api/auth/register
 Content-Type: {{contentType}}
 
 {
-  "username": "0xsj",
-  "handle": "0xsj",
-  "email": "sjtommylee@gmail.com",
+  "username": "testuser",
+  "handle": "testuser",
+  "email": "test@example.com",
   "password": "Password123!",
-  "first_name": "SJ",
-  "last_name": "Lee",
-  "bio": "SJ lee's profile",
+  "first_name": "Test",
+  "last_name": "User",
+  "bio": "This is a test user for API testing",
   "profile_image_url": "https://via.placeholder.com/150",
   "layout_version": "v1",
   "custom_domain": ""
 }
 
-### Login
+### Store the user ID from the registration response
+@userId = {{register.response.body.data.id}}
+
+### Login with the registered user
 # @name login
 POST {{baseUrl}}/api/auth/login
 Content-Type: {{contentType}}
 
 {
-  "email": "sjtommylee@gmail.com",
+  "email": "test@example.com",
   "password": "Password123!"
 }
 
-### Store the access token from the login response
+### Store tokens from login response
 @accessToken = {{login.response.body.data.access_token}}
 @refreshToken = {{login.response.body.data.refresh_token}}
-@userId = {{login.response.body.data.user.id}}
 
 ### Refresh Token
+# @name refreshToken
 POST {{baseUrl}}/api/auth/refresh
 Content-Type: {{contentType}}
 
 {
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNDQ0Njg2ZTctOWMzYi00M2ZhLTg3MWEtMDc3YjBmMTQ1NDczIiwidXNlcm5hbWUiOiJ0ZXN0dXNlciIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsImlzX2FkbWluIjpmYWxzZSwiaXNfcHJlbWl1bSI6ZmFsc2UsInRva2VuX3R5cGUiOiJyZWZyZXNoIiwiZXhwIjoxNzQ2NDc4MDY1LCJuYmYiOjE3NDU4NzMyNjUsImlhdCI6MTc0NTg3MzI2NSwianRpIjoiODllYWEwODQtYWE0MC00MjU4LWE4NWItODk0MGQyZDA3ZDU1In0.8Kurt4cdNgscq_P3jchrFxvZ4K6lYzMdzYiJja21GSY"
+  "refresh_token": "{{refreshToken}}"
 }
+
+### Store new tokens
+@newAccessToken = {{refreshToken.response.body.data.access_token}}
+@newRefreshToken = {{refreshToken.response.body.data.refresh_token}}
 
 ### Forgot Password
 POST {{baseUrl}}/api/auth/forgot-password
@@ -49,23 +57,23 @@ Content-Type: {{contentType}}
   "email": "test@example.com"
 }
 
-### Reset Password
+### Reset Password (token would come from email)
 POST {{baseUrl}}/api/auth/reset-password
 Content-Type: {{contentType}}
 
 {
-  "token": "your-reset-token",
+  "token": "your-reset-token-from-email",
   "email": "test@example.com",
   "new_password": "NewPassword123!",
   "confirm_password": "NewPassword123!"
 }
 
-### Verify Email
+### Verify Email (token would come from email)
 POST {{baseUrl}}/api/auth/verify-email
 Content-Type: {{contentType}}
 
 {
-  "token": "your-verification-token"
+  "token": "your-verification-token-from-email"
 }
 
 ### Logout
@@ -75,4 +83,22 @@ Authorization: Bearer {{accessToken}}
 
 {
   "user_id": "{{userId}}"
+}
+
+### Test Login with Wrong Password (should fail)
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "WrongPassword123!"
+}
+
+### Test Login with Non-existent User (should fail)
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "nonexistent@example.com",
+  "password": "Password123!"
 }

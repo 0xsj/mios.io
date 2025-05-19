@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/0xsj/gin-sqlc/api/analytics"
@@ -26,11 +27,12 @@ type Server struct {
 	redisClient *redis.Client
 }
 
-func NewServer(config config.Config, store db.Querier, logger log.Logger, redisClient *redis.Client) *Server {
-
+func NewServer(config config.Config, store db.Querier, logger log.Logger, redisClient *redis.Client) (*Server, error) {
 	router := gin.Default()
 
-	router.SetTrustedProxies([]string{"127.0.0.1"})
+	if err := router.SetTrustedProxies([]string{"127.0.0.1"}); err != nil {
+		return nil, fmt.Errorf("failed to set trusted proxies: %w", err)
+	}
 
 	router.Use(middleware.RequestLogger(logger))
 	router.Use(middleware.Recovery(logger))
@@ -45,7 +47,7 @@ func NewServer(config config.Config, store db.Querier, logger log.Logger, redisC
 	}
 
 	logger.Info("API server initialized successfully")
-	return server
+	return server, nil
 }
 
 func (s *Server) RegisterHandlers(
@@ -72,7 +74,7 @@ func (s *Server) RegisterHandlers(
 			authGroup.POST("/refresh", authHandler.RefreshToken)
 			authGroup.POST("/forgot-password", authHandler.ForgotPassword)
 			authGroup.POST("/reset-password", authHandler.ResetPassword)
-			authGroup.POST("/verify-email", authHandler.VerifyEmail)
+			// authGroup.POST("/verify-email", authHandler.VerifyEmail)
 		}
 
 		// Public user routes

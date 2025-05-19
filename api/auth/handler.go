@@ -32,7 +32,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		authGroup.POST("/refresh", h.RefreshToken)
 		authGroup.POST("/forgot-password", h.ForgotPassword)
 		authGroup.POST("/reset-password", h.ResetPassword)
-		authGroup.POST("/verify-email", h.VerifyEmail)
+		// authGroup.POST("/verify-email", h.VerifyEmail)
 		authGroup.POST("/logout", h.Logout)
 	}
 
@@ -193,29 +193,29 @@ func (h *Handler) ResetPassword(c *gin.Context) {
 }
 
 // VerifyEmail validates a user's email address
-func (h *Handler) VerifyEmail(c *gin.Context) {
-	h.logger.Info("VerifyEmail handler called")
+// func (h *Handler) VerifyEmail(c *gin.Context) {
+// 	h.logger.Info("VerifyEmail handler called")
 
-	var req VerifyEmailRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		h.logger.Warnf("Invalid request format: %v", err)
-		response.Error(c, response.ErrBadRequestResponse, err.Error())
-		return
-	}
+// 	var req VerifyEmailRequest
+// 	if err := c.ShouldBindJSON(&req); err != nil {
+// 		h.logger.Warnf("Invalid request format: %v", err)
+// 		response.Error(c, response.ErrBadRequestResponse, err.Error())
+// 		return
+// 	}
 
-	// For security reasons, don't log the actual token
-	h.logger.Debug("Received email verification request")
+// 	// For security reasons, don't log the actual token
+// 	h.logger.Debug("Received email verification request")
 
-	err := h.authService.VerifyEmail(c, req.Token)
-	if err != nil {
-		h.logger.Errorf("Failed to verify email: %v", err)
-		response.HandleError(c, err, h.logger)
-		return
-	}
+// 	err := h.authService.VerifyEmail(c, req.Token)
+// 	if err != nil {
+// 		h.logger.Errorf("Failed to verify email: %v", err)
+// 		response.HandleError(c, err, h.logger)
+// 		return
+// 	}
 
-	h.logger.Info("Email verified successfully")
-	response.Success(c, nil, "Email has been verified successfully")
-}
+// 	h.logger.Info("Email verified successfully")
+// 	response.Success(c, nil, "Email has been verified successfully")
+// }
 
 // Logout ends a user's session
 func (h *Handler) Logout(c *gin.Context) {
