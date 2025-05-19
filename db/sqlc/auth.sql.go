@@ -84,6 +84,34 @@ func (q *Queries) GetAuthByUserID(ctx context.Context, userID uuid.UUID) (*Auth,
 	return &i, err
 }
 
+const getAuthByVerificationToken = `-- name: GetAuthByVerificationToken :one
+SELECT auth_id, user_id, password_hash, salt, is_email_verified, verification_token, reset_token, reset_token_expires_at, last_login, refresh_token, failed_login_attempts, locked_until, created_at, updated_at FROM auth
+WHERE verification_token = $1
+LIMIT 1
+`
+
+func (q *Queries) GetAuthByVerificationToken(ctx context.Context, verificationToken *string) (*Auth, error) {
+	row := q.db.QueryRow(ctx, getAuthByVerificationToken, verificationToken)
+	var i Auth
+	err := row.Scan(
+		&i.AuthID,
+		&i.UserID,
+		&i.PasswordHash,
+		&i.Salt,
+		&i.IsEmailVerified,
+		&i.VerificationToken,
+		&i.ResetToken,
+		&i.ResetTokenExpiresAt,
+		&i.LastLogin,
+		&i.RefreshToken,
+		&i.FailedLoginAttempts,
+		&i.LockedUntil,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
 const incrementFailedLoginAttempts = `-- name: IncrementFailedLoginAttempts :exec
 UPDATE auth
 SET

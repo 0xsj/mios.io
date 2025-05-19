@@ -24,6 +24,7 @@ type Querier interface {
 	DeleteLinkMetadata(ctx context.Context, metadataID uuid.UUID) error
 	DeleteUser(ctx context.Context, userID uuid.UUID) error
 	GetAuthByUserID(ctx context.Context, userID uuid.UUID) (*Auth, error)
+	GetAuthByVerificationToken(ctx context.Context, verificationToken *string) (*Auth, error)
 	GetContentItem(ctx context.Context, itemID uuid.UUID) (*ContentItem, error)
 	// Count queries
 	GetContentItemClickCount(ctx context.Context, itemID uuid.UUID) (int64, error)

@@ -267,3 +267,19 @@ func (r *SQLCAuthRepository) InvalidateRefreshToken(ctx context.Context, userID 
 	r.logger.Infof("Refresh token invalidated successfully for user ID: %s in %v", userID, duration)
 	return nil
 }
+
+func (r *SQLCAuthRepository) GetAuthByVerificationToken(ctx context.Context, verificationToken string) (*db.Auth, error) {
+    r.logger.Debugf("Getting auth by verification token")
+
+    tokenPtr := verificationToken
+    
+    auth, err := r.db.GetAuthByVerificationToken(ctx, &tokenPtr)
+    if err != nil {
+        appErr := errors.HandleDBError(err, "auth record")
+        appErr.Log(r.logger)
+        return nil, appErr
+    }
+
+    r.logger.Debugf("Auth record retrieved successfully by verification token")
+    return auth, nil
+}
