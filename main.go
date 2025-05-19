@@ -18,6 +18,7 @@ import (
 	db "github.com/0xsj/gin-sqlc/db/sqlc"
 	"github.com/0xsj/gin-sqlc/log"
 	"github.com/0xsj/gin-sqlc/middleware"
+	"github.com/0xsj/gin-sqlc/pkg/email"
 	"github.com/0xsj/gin-sqlc/pkg/redis"
 	"github.com/0xsj/gin-sqlc/repository"
 	"github.com/0xsj/gin-sqlc/service"
@@ -65,6 +66,16 @@ func main() {
 		return
 	}
 
+	templateManager, err := email.NewTemplateManager("./pkg/email/templates")
+	if err != nil {
+		appLogger.Fatalf("Failed to initialize email template manager: %v", err)
+	}
+
+	baseURL := fmt.Sprintf("http://%s:%s", cfg.Host, cfg.Port)
+	if cfg.Environment == "production" {
+		baseURL = "https://appreciate.it"
+	}
+
 	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		cfg.DBUsername, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName)
 	appLogger.Debugf("Database URL: %s", dbURL)
@@ -93,11 +104,19 @@ func main() {
 	contentRepo := repository.NewContentRepository(queries, repoLogger.With("repository", "Content"))
 	analyticsRepo := repository.NewAnalyticsRepository(queries, repoLogger.With("repository", "Analytics"))
 	linkMetadataRepo := repository.NewLinkMetadataRepository(queries, repoLogger.With("repository", "LinkMetadata"))
+	emailClient := email.NewEmailClient(baseLogger.WithLayer("Email"), templateManager)
 
 	appLogger.Info("Initializing services...")
 	userService := service.NewUserService(userRepo, serviceLogger.With("service", "User"))
-	authService := service.NewAuthService(userRepo, authRepo, cfg.JWTSecret, cfg.GetTokenDuration(),
-		serviceLogger.With("service", "Auth"))
+	authService := service.NewAuthService(
+		userRepo,
+		authRepo,
+		emailClient,
+		cfg.JWTSecret,
+		cfg.GetTokenDuration(),
+		serviceLogger.With("service", "Auth"),
+		baseURL,
+	)
 	contentService := service.NewContentService(contentRepo, userRepo,
 		serviceLogger.With("service", "Content"))
 	analyticsService := service.NewAnalyticsService(analyticsRepo, contentRepo, userRepo,

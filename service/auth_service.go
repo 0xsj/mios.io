@@ -32,9 +32,9 @@ type AuthService interface {
 	ValidateToken(ctx context.Context, tokenStr string) (*token.Claims, error)
 	IsEmailVerified(ctx context.Context, userID string) (bool, error)
 	SendVerificationEmail(ctx context.Context, email, username, token string) error
-    SendPasswordResetEmail(ctx context.Context, email, username, token string) error
-    SendPasswordChangedEmail(ctx context.Context, email, username string) error
-    SendAccountLockedEmail(ctx context.Context, email, username, unlockTime string) error
+	SendPasswordResetEmail(ctx context.Context, email, username, token string) error
+	SendPasswordChangedEmail(ctx context.Context, email, username string) error
+	SendAccountLockedEmail(ctx context.Context, email, username, unlockTime string) error
 }
 
 type RegisterInput struct {
@@ -76,11 +76,11 @@ type TokenResponse struct {
 type authService struct {
 	userRepo    repository.UserRepository
 	authRepo    repository.AuthRepository
-	emailClient	*email.EmailClient
+	emailClient *email.EmailClient
 	jwtSecret   string
 	tokenExpiry time.Duration
 	logger      log.Logger
-	baseURL		string
+	baseURL     string
 }
 
 func NewAuthService(
@@ -103,193 +103,193 @@ func NewAuthService(
 		jwtSecret:   jwtSecret,
 		tokenExpiry: tokenExpiry,
 		logger:      logger,
-		baseURL:	 baseURL,
+		baseURL:     baseURL,
 	}
 }
 
 func (s *authService) Register(ctx context.Context, input RegisterInput) (*UserDTO, error) {
-    s.logger.Infof("Registering new user with email: %s and username: %s", input.Email, input.Username)
+	s.logger.Infof("Registering new user with email: %s and username: %s", input.Email, input.Username)
 
-    err := password.ValidatePassword(input.Password, password.DefaultPasswordConfig())
-    if err != nil {
-        s.logger.Warnf("Password validation failed for new user registration: %v", err)
-        return nil, errors.NewValidationError("Invalid password format", err)
-    }
+	err := password.ValidatePassword(input.Password, password.DefaultPasswordConfig())
+	if err != nil {
+		s.logger.Warnf("Password validation failed for new user registration: %v", err)
+		return nil, errors.NewValidationError("Invalid password format", err)
+	}
 
-    _, err = s.userRepo.GetUserByEmail(ctx, input.Email)
-    if err == nil {
-        s.logger.Warnf("Registration failed: email %s already exists", input.Email)
-        return nil, errors.NewConflictError("Email already registered", nil)
-    } else if !errors.IsNotFound(err) {
-        s.logger.Errorf("Error checking existing email: %v", err)
-        return nil, errors.Wrap(err, "Failed to check existing email")
-    }
+	_, err = s.userRepo.GetUserByEmail(ctx, input.Email)
+	if err == nil {
+		s.logger.Warnf("Registration failed: email %s already exists", input.Email)
+		return nil, errors.NewConflictError("Email already registered", nil)
+	} else if !errors.IsNotFound(err) {
+		s.logger.Errorf("Error checking existing email: %v", err)
+		return nil, errors.Wrap(err, "Failed to check existing email")
+	}
 
-    _, err = s.userRepo.GetUserByUsername(ctx, input.Username)
-    if err == nil {
-        s.logger.Warnf("Registration failed: username %s already exists", input.Username)
-        return nil, errors.NewConflictError("Username already taken", nil)
-    } else if !errors.IsNotFound(err) {
-        s.logger.Errorf("Error checking existing username: %v", err)
-        return nil, errors.Wrap(err, "Failed to check existing username")
-    }
+	_, err = s.userRepo.GetUserByUsername(ctx, input.Username)
+	if err == nil {
+		s.logger.Warnf("Registration failed: username %s already exists", input.Username)
+		return nil, errors.NewConflictError("Username already taken", nil)
+	} else if !errors.IsNotFound(err) {
+		s.logger.Errorf("Error checking existing username: %v", err)
+		return nil, errors.Wrap(err, "Failed to check existing username")
+	}
 
-    userParams := repository.CreateUserParams{
-        Username:        input.Username,
-        Handle:          input.Handle,
-        Email:           input.Email,
-        FirstName:       input.FirstName,
-        LastName:        input.LastName,
-        Bio:             input.Bio,
-        ProfileImageURL: input.ProfileImageURL,
-        LayoutVersion:   input.LayoutVersion,
-        CustomDomain:    input.CustomDomain,
-        IsPremium:       false,
-        IsAdmin:         false,
-        Onboarded:       false,
-    }
+	userParams := repository.CreateUserParams{
+		Username:        input.Username,
+		Handle:          input.Handle,
+		Email:           input.Email,
+		FirstName:       input.FirstName,
+		LastName:        input.LastName,
+		Bio:             input.Bio,
+		ProfileImageURL: input.ProfileImageURL,
+		LayoutVersion:   input.LayoutVersion,
+		CustomDomain:    input.CustomDomain,
+		IsPremium:       false,
+		IsAdmin:         false,
+		Onboarded:       false,
+	}
 
-    user, err := s.userRepo.CreateUser(ctx, userParams)
-    if err != nil {
-        s.logger.Errorf("Failed to create user: %v", err)
-        return nil, errors.Wrap(err, "Failed to create user")
-    }
+	user, err := s.userRepo.CreateUser(ctx, userParams)
+	if err != nil {
+		s.logger.Errorf("Failed to create user: %v", err)
+		return nil, errors.Wrap(err, "Failed to create user")
+	}
 
-    hashedPassword, salt, err := password.HashPassword(input.Password)
-    if err != nil {
-        s.logger.Errorf("Failed to hash password: %v", err)
-        _ = s.userRepo.DeleteUser(ctx, user.UserID)
-        return nil, errors.NewInternalError("Failed to secure password", err)
-    }
+	hashedPassword, salt, err := password.HashPassword(input.Password)
+	if err != nil {
+		s.logger.Errorf("Failed to hash password: %v", err)
+		_ = s.userRepo.DeleteUser(ctx, user.UserID)
+		return nil, errors.NewInternalError("Failed to secure password", err)
+	}
 
-    verificationToken, err := token.GenerateVerificationToken()
-    if err != nil {
-        s.logger.Errorf("Failed to generate verification token: %v", err)
-        _ = s.userRepo.DeleteUser(ctx, user.UserID)
-        return nil, errors.NewInternalError("Failed to generate verification token", err)
-    }
+	verificationToken, err := token.GenerateVerificationToken()
+	if err != nil {
+		s.logger.Errorf("Failed to generate verification token: %v", err)
+		_ = s.userRepo.DeleteUser(ctx, user.UserID)
+		return nil, errors.NewInternalError("Failed to generate verification token", err)
+	}
 
-    authParams := repository.CreateAuthParams{
-        UserID:            user.UserID,
-        PasswordHash:      hashedPassword,
-        Salt:              salt,
-        IsEmailVerified:   false,
-        VerificationToken: verificationToken,
-    }
+	authParams := repository.CreateAuthParams{
+		UserID:            user.UserID,
+		PasswordHash:      hashedPassword,
+		Salt:              salt,
+		IsEmailVerified:   false,
+		VerificationToken: verificationToken,
+	}
 
-    err = s.authRepo.CreateAuth(ctx, authParams)
-    if err != nil {
-        s.logger.Errorf("Failed to create auth record: %v", err)
-        _ = s.userRepo.DeleteUser(ctx, user.UserID)
-        return nil, errors.Wrap(err, "Failed to create auth record")
-    }
+	err = s.authRepo.CreateAuth(ctx, authParams)
+	if err != nil {
+		s.logger.Errorf("Failed to create auth record: %v", err)
+		_ = s.userRepo.DeleteUser(ctx, user.UserID)
+		return nil, errors.Wrap(err, "Failed to create auth record")
+	}
 
-    // Send verification email
-    err = s.SendVerificationEmail(ctx, user.UserID.String(), user.Username, verificationToken)
-    if err != nil {
-        s.logger.Warnf("Failed to send verification email: %v", err)
-        // Non-critical error, continue with registration
-    }
+	// Send verification email
+	err = s.SendVerificationEmail(ctx, user.UserID.String(), user.Username, verificationToken)
+	if err != nil {
+		s.logger.Warnf("Failed to send verification email: %v", err)
+		// Non-critical error, continue with registration
+	}
 
-    s.logger.Infof("User successfully registered with ID: %s", user.UserID)
-    return mapUserToDTO(user), nil
+	s.logger.Infof("User successfully registered with ID: %s", user.UserID)
+	return mapUserToDTO(user), nil
 }
 
 func (s *authService) Login(ctx context.Context, input LoginInput) (*TokenResponse, error) {
-    s.logger.Infof("Login attempt for email: %s", input.Email)
+	s.logger.Infof("Login attempt for email: %s", input.Email)
 
-    // Get user by email
-    user, err := s.userRepo.GetUserByEmail(ctx, input.Email)
-    if err != nil {
-        s.logger.Warnf("Login failed: email lookup error: %v", err)
-        if errors.IsNotFound(err) {
-            return nil, errors.NewUnauthorizedError("Invalid credentials", nil)
-        }
-        return nil, errors.Wrap(err, "Failed to retrieve user")
-    }
+	// Get user by email
+	user, err := s.userRepo.GetUserByEmail(ctx, input.Email)
+	if err != nil {
+		s.logger.Warnf("Login failed: email lookup error: %v", err)
+		if errors.IsNotFound(err) {
+			return nil, errors.NewUnauthorizedError("Invalid credentials", nil)
+		}
+		return nil, errors.Wrap(err, "Failed to retrieve user")
+	}
 
-    // Get auth record for user
-    auth, err := s.authRepo.GetAuthByUserID(ctx, user.UserID)
-    if err != nil {
-        s.logger.Errorf("Error retrieving auth for user %s: %v", user.UserID, err)
-        return nil, errors.Wrap(err, "Failed to retrieve authentication information")
-    }
+	// Get auth record for user
+	auth, err := s.authRepo.GetAuthByUserID(ctx, user.UserID)
+	if err != nil {
+		s.logger.Errorf("Error retrieving auth for user %s: %v", user.UserID, err)
+		return nil, errors.Wrap(err, "Failed to retrieve authentication information")
+	}
 
-    // Check if account is locked
-    if auth.LockedUntil != nil && time.Now().Before(*auth.LockedUntil) {
-        s.logger.Warnf("Login attempt for locked account: %s until %v", user.UserID, *auth.LockedUntil)
-        return nil, errors.NewForbiddenError("Account is temporarily locked", nil)
-    }
+	// Check if account is locked
+	if auth.LockedUntil != nil && time.Now().Before(*auth.LockedUntil) {
+		s.logger.Warnf("Login attempt for locked account: %s until %v", user.UserID, *auth.LockedUntil)
+		return nil, errors.NewForbiddenError("Account is temporarily locked", nil)
+	}
 
-    // Verify password
-    err = password.VerifyPassword(input.Password, auth.PasswordHash, auth.Salt)
-    if err != nil {
-        s.logger.Warnf("Login failed: invalid password for user %s", user.UserID)
+	// Verify password
+	err = password.VerifyPassword(input.Password, auth.PasswordHash, auth.Salt)
+	if err != nil {
+		s.logger.Warnf("Login failed: invalid password for user %s", user.UserID)
 
-        // Increment failed login attempts
-        errIncrement := s.authRepo.IncrementFailedLoginAttempts(ctx, user.UserID)
-        if errIncrement != nil {
-            s.logger.Errorf("Failed to increment login attempts: %v", errIncrement)
-        }
+		// Increment failed login attempts
+		errIncrement := s.authRepo.IncrementFailedLoginAttempts(ctx, user.UserID)
+		if errIncrement != nil {
+			s.logger.Errorf("Failed to increment login attempts: %v", errIncrement)
+		}
 
-        // Check if account should be locked
-        if auth.FailedLoginAttempts != nil && *auth.FailedLoginAttempts >= 5 {
-            lockUntil := time.Now().Add(15 * time.Minute)
-            s.logger.Warnf("Locking account %s until %v due to multiple failed attempts", user.UserID, lockUntil)
+		// Check if account should be locked
+		if auth.FailedLoginAttempts != nil && *auth.FailedLoginAttempts >= 5 {
+			lockUntil := time.Now().Add(15 * time.Minute)
+			s.logger.Warnf("Locking account %s until %v due to multiple failed attempts", user.UserID, lockUntil)
 
-            errLock := s.authRepo.SetAccountLockout(ctx, user.UserID, lockUntil)
-            if errLock != nil {
-                s.logger.Errorf("Failed to lock account: %v", errLock)
-            }
-            
-            // Send account locked notification
-            _ = s.SendAccountLockedEmail(ctx, user.UserID.String(), user.Username, lockUntil.Format(time.RFC1123))
-        }
+			errLock := s.authRepo.SetAccountLockout(ctx, user.UserID, lockUntil)
+			if errLock != nil {
+				s.logger.Errorf("Failed to lock account: %v", errLock)
+			}
 
-        return nil, errors.NewUnauthorizedError("Invalid credentials", nil)
-    }
+			// Send account locked notification
+			_ = s.SendAccountLockedEmail(ctx, user.UserID.String(), user.Username, lockUntil.Format(time.RFC1123))
+		}
 
-    // Update last login time
-    err = s.authRepo.UpdateLastLogin(ctx, user.UserID)
-    if err != nil {
-        s.logger.Warnf("Failed to update last login: %v", err)
-        // Non-critical error, continue with login
-    }
+		return nil, errors.NewUnauthorizedError("Invalid credentials", nil)
+	}
 
-    // Create token pair
-    isAdmin := user.IsAdmin != nil && *user.IsAdmin
-    isPremium := user.IsPremium != nil && *user.IsPremium
+	// Update last login time
+	err = s.authRepo.UpdateLastLogin(ctx, user.UserID)
+	if err != nil {
+		s.logger.Warnf("Failed to update last login: %v", err)
+		// Non-critical error, continue with login
+	}
 
-    jwtMaker := token.NewJWTMaker(s.jwtSecret)
-    tokenPair, err := jwtMaker.CreateTokenPair(
-        user.UserID.String(),
-        user.Username,
-        user.Email,
-        isAdmin,
-        isPremium,
-        s.tokenExpiry,
-        DefaultRefreshTokenDuration,
-    )
+	// Create token pair
+	isAdmin := user.IsAdmin != nil && *user.IsAdmin
+	isPremium := user.IsPremium != nil && *user.IsPremium
 
-    if err != nil {
-        s.logger.Errorf("Failed to create token pair: %v", err)
-        return nil, errors.NewInternalError("Failed to generate authentication tokens", err)
-    }
+	jwtMaker := token.NewJWTMaker(s.jwtSecret)
+	tokenPair, err := jwtMaker.CreateTokenPair(
+		user.UserID.String(),
+		user.Username,
+		user.Email,
+		isAdmin,
+		isPremium,
+		s.tokenExpiry,
+		DefaultRefreshTokenDuration,
+	)
 
-    // Store refresh token
-    err = s.authRepo.StoreRefreshToken(ctx, user.UserID, tokenPair.RefreshToken)
-    if err != nil {
-        s.logger.Errorf("Failed to store refresh token: %v", err)
-        return nil, errors.Wrap(err, "Failed to store refresh token")
-    }
+	if err != nil {
+		s.logger.Errorf("Failed to create token pair: %v", err)
+		return nil, errors.NewInternalError("Failed to generate authentication tokens", err)
+	}
 
-    s.logger.Infof("User %s logged in successfully", user.UserID)
-    return &TokenResponse{
-        AccessToken:  tokenPair.AccessToken,
-        RefreshToken: tokenPair.RefreshToken,
-        ExpiresAt:    tokenPair.ExpiresAt,
-        User:         mapUserToDTO(user),
-    }, nil
+	// Store refresh token
+	err = s.authRepo.StoreRefreshToken(ctx, user.UserID, tokenPair.RefreshToken)
+	if err != nil {
+		s.logger.Errorf("Failed to store refresh token: %v", err)
+		return nil, errors.Wrap(err, "Failed to store refresh token")
+	}
+
+	s.logger.Infof("User %s logged in successfully", user.UserID)
+	return &TokenResponse{
+		AccessToken:  tokenPair.AccessToken,
+		RefreshToken: tokenPair.RefreshToken,
+		ExpiresAt:    tokenPair.ExpiresAt,
+		User:         mapUserToDTO(user),
+	}, nil
 }
 
 func (s *authService) RefreshToken(ctx context.Context, input RefreshTokenRequest) (*TokenResponse, error) {
@@ -368,118 +368,118 @@ func (s *authService) RefreshToken(ctx context.Context, input RefreshTokenReques
 }
 
 func (s *authService) GenerateResetToken(ctx context.Context, email string) error {
-    s.logger.Infof("Generating password reset token for email: %s", email)
+	s.logger.Infof("Generating password reset token for email: %s", email)
 
-    // Find user by email
-    user, err := s.userRepo.GetUserByEmail(ctx, email)
-    if err != nil {
-        if errors.IsNotFound(err) {
-            // Don't reveal that email doesn't exist for security reasons
-            s.logger.Infof("Reset token requested for non-existent email: %s", email)
-            return nil
-        }
-        s.logger.Errorf("Error looking up user by email: %v", err)
-        return errors.Wrap(err, "Failed to lookup user email")
-    }
+	// Find user by email
+	user, err := s.userRepo.GetUserByEmail(ctx, email)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Don't reveal that email doesn't exist for security reasons
+			s.logger.Infof("Reset token requested for non-existent email: %s", email)
+			return nil
+		}
+		s.logger.Errorf("Error looking up user by email: %v", err)
+		return errors.Wrap(err, "Failed to lookup user email")
+	}
 
-    // Generate reset token
-    resetToken, err := token.GenerateResetToken()
-    if err != nil {
-        s.logger.Errorf("Failed to generate reset token: %v", err)
-        return errors.NewInternalError("Failed to generate reset token", err)
-    }
+	// Generate reset token
+	resetToken, err := token.GenerateResetToken()
+	if err != nil {
+		s.logger.Errorf("Failed to generate reset token: %v", err)
+		return errors.NewInternalError("Failed to generate reset token", err)
+	}
 
-    // Store reset token with expiration
-    expiresAt := time.Now().Add(DefaultResetTokenDuration)
-    err = s.authRepo.SetResetToken(ctx, user.UserID, resetToken, expiresAt)
-    if err != nil {
-        s.logger.Errorf("Failed to store reset token: %v", err)
-        return errors.Wrap(err, "Failed to store reset token")
-    }
+	// Store reset token with expiration
+	expiresAt := time.Now().Add(DefaultResetTokenDuration)
+	err = s.authRepo.SetResetToken(ctx, user.UserID, resetToken, expiresAt)
+	if err != nil {
+		s.logger.Errorf("Failed to store reset token: %v", err)
+		return errors.Wrap(err, "Failed to store reset token")
+	}
 
-    // Send password reset email
-    err = s.SendPasswordResetEmail(ctx, user.UserID.String(), user.Username, resetToken)
-    if err != nil {
-        s.logger.Errorf("Failed to send password reset email: %v", err)
-        return errors.Wrap(err, "Failed to send password reset email")
-    }
+	// Send password reset email
+	err = s.SendPasswordResetEmail(ctx, user.UserID.String(), user.Username, resetToken)
+	if err != nil {
+		s.logger.Errorf("Failed to send password reset email: %v", err)
+		return errors.Wrap(err, "Failed to send password reset email")
+	}
 
-    s.logger.Infof("Reset token generated successfully for user ID: %s", user.UserID)
-    return nil
+	s.logger.Infof("Reset token generated successfully for user ID: %s", user.UserID)
+	return nil
 }
 
 func (s *authService) ResetPassword(ctx context.Context, input ResetPasswordInput) error {
-    s.logger.Infof("Processing password reset for email: %s", input.Email)
+	s.logger.Infof("Processing password reset for email: %s", input.Email)
 
-    // Validate passwords match
-    if input.NewPassword != input.ConfirmPassword {
-        s.logger.Warnf("Password reset failed: passwords don't match")
-        return errors.NewValidationError("Passwords do not match", nil)
-    }
+	// Validate passwords match
+	if input.NewPassword != input.ConfirmPassword {
+		s.logger.Warnf("Password reset failed: passwords don't match")
+		return errors.NewValidationError("Passwords do not match", nil)
+	}
 
-    // Validate password strength
-    err := password.ValidatePassword(input.NewPassword, password.DefaultPasswordConfig())
-    if err != nil {
-        s.logger.Warnf("Password reset failed: password validation failed: %v", err)
-        return errors.NewValidationError("Password does not meet requirements", err)
-    }
+	// Validate password strength
+	err := password.ValidatePassword(input.NewPassword, password.DefaultPasswordConfig())
+	if err != nil {
+		s.logger.Warnf("Password reset failed: password validation failed: %v", err)
+		return errors.NewValidationError("Password does not meet requirements", err)
+	}
 
-    // Find user by email
-    user, err := s.userRepo.GetUserByEmail(ctx, input.Email)
-    if err != nil {
-        s.logger.Warnf("Password reset failed: email not found: %s", input.Email)
-        return errors.NewNotFoundError("Invalid email address", err)
-    }
+	// Find user by email
+	user, err := s.userRepo.GetUserByEmail(ctx, input.Email)
+	if err != nil {
+		s.logger.Warnf("Password reset failed: email not found: %s", input.Email)
+		return errors.NewNotFoundError("Invalid email address", err)
+	}
 
-    // Get auth record to verify token
-    auth, err := s.authRepo.GetAuthByUserID(ctx, user.UserID)
-    if err != nil {
-        s.logger.Errorf("Failed to get auth record: %v", err)
-        return errors.Wrap(err, "Failed to verify reset token")
-    }
+	// Get auth record to verify token
+	auth, err := s.authRepo.GetAuthByUserID(ctx, user.UserID)
+	if err != nil {
+		s.logger.Errorf("Failed to get auth record: %v", err)
+		return errors.Wrap(err, "Failed to verify reset token")
+	}
 
-    // Verify reset token is valid
-    if auth.ResetToken == nil || *auth.ResetToken != input.Token {
-        s.logger.Warnf("Password reset failed: invalid token for user %s", user.UserID)
-        return errors.NewUnauthorizedError("Invalid reset token", nil)
-    }
+	// Verify reset token is valid
+	if auth.ResetToken == nil || *auth.ResetToken != input.Token {
+		s.logger.Warnf("Password reset failed: invalid token for user %s", user.UserID)
+		return errors.NewUnauthorizedError("Invalid reset token", nil)
+	}
 
-    // Verify token hasn't expired
-    if auth.ResetTokenExpiresAt == nil || time.Now().After(*auth.ResetTokenExpiresAt) {
-        s.logger.Warnf("Password reset failed: expired token for user %s", user.UserID)
-        return errors.NewUnauthorizedError("Reset token has expired", nil)
-    }
+	// Verify token hasn't expired
+	if auth.ResetTokenExpiresAt == nil || time.Now().After(*auth.ResetTokenExpiresAt) {
+		s.logger.Warnf("Password reset failed: expired token for user %s", user.UserID)
+		return errors.NewUnauthorizedError("Reset token has expired", nil)
+	}
 
-    // Hash new password
-    newHash, newSalt, err := password.HashPassword(input.NewPassword)
-    if err != nil {
-        s.logger.Errorf("Failed to hash new password: %v", err)
-        return errors.NewInternalError("Failed to secure new password", err)
-    }
+	// Hash new password
+	newHash, newSalt, err := password.HashPassword(input.NewPassword)
+	if err != nil {
+		s.logger.Errorf("Failed to hash new password: %v", err)
+		return errors.NewInternalError("Failed to secure new password", err)
+	}
 
-    // Update password
-    err = s.authRepo.UpdatePassword(ctx, user.UserID, newHash, newSalt)
-    if err != nil {
-        s.logger.Errorf("Failed to update password: %v", err)
-        return errors.Wrap(err, "Failed to update password")
-    }
+	// Update password
+	err = s.authRepo.UpdatePassword(ctx, user.UserID, newHash, newSalt)
+	if err != nil {
+		s.logger.Errorf("Failed to update password: %v", err)
+		return errors.Wrap(err, "Failed to update password")
+	}
 
-    // Clear reset token
-    err = s.authRepo.ClearResetToken(ctx, user.UserID)
-    if err != nil {
-        s.logger.Warnf("Failed to clear reset token: %v", err)
-        // Non-critical error, password was updated successfully
-    }
+	// Clear reset token
+	err = s.authRepo.ClearResetToken(ctx, user.UserID)
+	if err != nil {
+		s.logger.Warnf("Failed to clear reset token: %v", err)
+		// Non-critical error, password was updated successfully
+	}
 
-    // Send password changed confirmation email
-    err = s.SendPasswordChangedEmail(ctx, user.UserID.String(), user.Username)
-    if err != nil {
-        s.logger.Warnf("Failed to send password changed notification: %v", err)
-        // Non-critical error, password was reset successfully
-    }
+	// Send password changed confirmation email
+	err = s.SendPasswordChangedEmail(ctx, user.UserID.String(), user.Username)
+	if err != nil {
+		s.logger.Warnf("Failed to send password changed notification: %v", err)
+		// Non-critical error, password was reset successfully
+	}
 
-    s.logger.Infof("Password reset successfully for user ID: %s", user.UserID)
-    return nil
+	s.logger.Infof("Password reset successfully for user ID: %s", user.UserID)
+	return nil
 }
 
 // func (s *authService) VerifyEmail(ctx context.Context, verificationToken string) error {
@@ -495,7 +495,7 @@ func (s *authService) ResetPassword(ctx context.Context, input ResetPasswordInpu
 //     // For now, let's assume you need to manually look up auth records
 //     // This is inefficient and would be better with a direct DB query
 //     // Get all users and find the one with the matching verification token
-    
+
 //     // Example implementation (assuming you add the necessary repository method):
 //     auth, err := s.authRepo.GetAuthByVerificationToken(ctx, verificationToken)
 //     if err != nil {
@@ -540,9 +540,9 @@ func (s *authService) ResetPassword(ctx context.Context, input ResetPasswordInpu
 //     }
 
 //     emailErr := s.emailClient.SendTemplate(
-//         []string{user.Email}, 
-//         "Email Verification Successful", 
-//         "verification_success.html", 
+//         []string{user.Email},
+//         "Email Verification Successful",
+//         "verification_success.html",
 //         data,
 //     )
 //     if emailErr != nil {
@@ -632,84 +632,84 @@ func (s *authService) IsEmailVerified(ctx context.Context, userIDStr string) (bo
 }
 
 func (s *authService) SendVerificationEmail(ctx context.Context, email, username, token string) error {
-    s.logger.Infof("Sending verification email to: %s", email)
-    
-    verificationLink := fmt.Sprintf("%s/verify-email?token=%s", s.baseURL, token)
-    
-    data := map[string]interface{}{
-        "Username": username,
-        "Link":     verificationLink,
-        "AppName":  "Your App Name",
-        "Year":     time.Now().Year(),
-    }
-    
-    err := s.emailClient.SendTemplate([]string{email}, "Verify Your Email", "verification.html", data)
-    if err != nil {
-        s.logger.Errorf("Failed to send verification email: %v", err)
-        return errors.Wrap(err, "Failed to send verification email")
-    }
-    
-    s.logger.Infof("Verification email sent successfully to: %s", email)
-    return nil
+	s.logger.Infof("Sending verification email to: %s", email)
+
+	verificationLink := fmt.Sprintf("%s/verify-email?token=%s", s.baseURL, token)
+
+	data := map[string]interface{}{
+		"Username": username,
+		"Link":     verificationLink,
+		"AppName":  "Your App Name",
+		"Year":     time.Now().Year(),
+	}
+
+	err := s.emailClient.SendTemplate([]string{email}, "Verify Your Email", "verification.html", data)
+	if err != nil {
+		s.logger.Errorf("Failed to send verification email: %v", err)
+		return errors.Wrap(err, "Failed to send verification email")
+	}
+
+	s.logger.Infof("Verification email sent successfully to: %s", email)
+	return nil
 }
 
 func (s *authService) SendPasswordResetEmail(ctx context.Context, email, username, token string) error {
-    s.logger.Infof("Sending password reset email to: %s", email)
-    
-    resetLink := fmt.Sprintf("%s/reset-password?token=%s&email=%s", s.baseURL, token, url.QueryEscape(email))
-    
-    data := map[string]interface{}{
-        "Username": username,
-        "Link":     resetLink,
-        "AppName":  "Your App Name",
-        "Year":     time.Now().Year(),
-    }
-    
-    err := s.emailClient.SendTemplate([]string{email}, "Reset Your Password", "password_reset.html", data)
-    if err != nil {
-        s.logger.Errorf("Failed to send password reset email: %v", err)
-        return errors.Wrap(err, "Failed to send password reset email")
-    }
-    
-    s.logger.Infof("Password reset email sent successfully to: %s", email)
-    return nil
+	s.logger.Infof("Sending password reset email to: %s", email)
+
+	resetLink := fmt.Sprintf("%s/reset-password?token=%s&email=%s", s.baseURL, token, url.QueryEscape(email))
+
+	data := map[string]interface{}{
+		"Username": username,
+		"Link":     resetLink,
+		"AppName":  "Your App Name",
+		"Year":     time.Now().Year(),
+	}
+
+	err := s.emailClient.SendTemplate([]string{email}, "Reset Your Password", "password_reset.html", data)
+	if err != nil {
+		s.logger.Errorf("Failed to send password reset email: %v", err)
+		return errors.Wrap(err, "Failed to send password reset email")
+	}
+
+	s.logger.Infof("Password reset email sent successfully to: %s", email)
+	return nil
 }
 
 func (s *authService) SendPasswordChangedEmail(ctx context.Context, email, username string) error {
-    s.logger.Infof("Sending password changed notification to: %s", email)
-    
-    data := map[string]interface{}{
-        "Username": username,
-        "AppName":  "Your App Name",
-        "Year":     time.Now().Year(),
-    }
-    
-    err := s.emailClient.SendTemplate([]string{email}, "Your Password Has Been Changed", "password_changed.html", data)
-    if err != nil {
-        s.logger.Errorf("Failed to send password changed email: %v", err)
-        return errors.Wrap(err, "Failed to send password changed notification")
-    }
-    
-    s.logger.Infof("Password changed notification sent successfully to: %s", email)
-    return nil
+	s.logger.Infof("Sending password changed notification to: %s", email)
+
+	data := map[string]interface{}{
+		"Username": username,
+		"AppName":  "Your App Name",
+		"Year":     time.Now().Year(),
+	}
+
+	err := s.emailClient.SendTemplate([]string{email}, "Your Password Has Been Changed", "password_changed.html", data)
+	if err != nil {
+		s.logger.Errorf("Failed to send password changed email: %v", err)
+		return errors.Wrap(err, "Failed to send password changed notification")
+	}
+
+	s.logger.Infof("Password changed notification sent successfully to: %s", email)
+	return nil
 }
 
 func (s *authService) SendAccountLockedEmail(ctx context.Context, email, username, unlockTime string) error {
-    s.logger.Infof("Sending account locked notification to: %s", email)
-    
-    data := map[string]interface{}{
-        "Username":  username,
-        "AppName":   "Your App Name",
-        "Year":      time.Now().Year(),
-        "UnlockTime": unlockTime,
-    }
-    
-    err := s.emailClient.SendTemplate([]string{email}, "Your Account Has Been Temporarily Locked", "account_locked.html", data)
-    if err != nil {
-        s.logger.Errorf("Failed to send account locked email: %v", err)
-        return errors.Wrap(err, "Failed to send account locked notification")
-    }
-    
-    s.logger.Infof("Account locked notification sent successfully to: %s", email)
-    return nil
+	s.logger.Infof("Sending account locked notification to: %s", email)
+
+	data := map[string]interface{}{
+		"Username":   username,
+		"AppName":    "Your App Name",
+		"Year":       time.Now().Year(),
+		"UnlockTime": unlockTime,
+	}
+
+	err := s.emailClient.SendTemplate([]string{email}, "Your Account Has Been Temporarily Locked", "account_locked.html", data)
+	if err != nil {
+		s.logger.Errorf("Failed to send account locked email: %v", err)
+		return errors.Wrap(err, "Failed to send account locked notification")
+	}
+
+	s.logger.Infof("Account locked notification sent successfully to: %s", email)
+	return nil
 }
