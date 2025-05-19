@@ -1,0 +1,135 @@
+@baseUrl = http://localhost:8081
+@contentType = application/json
+
+### Test bad requests and error handling
+
+### Login with missing required fields
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com"
+}
+
+### Register with invalid email format
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "username": "baduser",
+  "handle": "baduser",
+  "email": "not-an-email",
+  "password": "Password123!"
+}
+
+### Register with weak password
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "username": "baduser",
+  "handle": "baduser",
+  "email": "bad@example.com",
+  "password": "weak"
+}
+
+### Try to access protected endpoint without auth
+GET {{baseUrl}}/api/users/some-user-id
+
+### Try to verify email with invalid token
+POST {{baseUrl}}/api/auth/verify-email
+Content-Type: {{contentType}}
+
+{
+  "token": "invalid-token-format"
+}
+
+### Try to get user with invalid UUID format
+GET {{baseUrl}}/api/users/not-a-uuid
+Content-Type: {{contentType}}
+
+### First, login to get valid token for further tests
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "Password123!"
+}
+
+### Store token
+@accessToken = {{login.response.body.data.access_token}}
+@userId = {{login.response.body.data.user.id}}
+
+### Try to create content with invalid user ID
+POST {{baseUrl}}/api/content
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "user_id": "invalid-uuid",
+  "content_id": "bad-item",
+  "content_type": "link",
+  "title": "Bad Item"
+}
+
+### Try to access non-existent content
+GET {{baseUrl}}/api/content/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{accessToken}}
+
+### Try to update handle with invalid format
+PATCH {{baseUrl}}/api/users/{{userId}}/handle
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "handle": "invalid handle with spaces!"
+}
+
+### Try to record analytics with missing required fields
+POST {{baseUrl}}/api/analytics/clicks
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "item_id": "{{userId}}"
+}
+
+### Try to access with expired/invalid token
+GET {{baseUrl}}/api/users/{{userId}}
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+
+### Try to request with invalid JSON
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "Password123!",
+  invalid_json_here
+}
+
+### Try to request with unsupported content type
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/xml
+
+<login>
+  <email>test@example.com</email>
+  <password>Password123!</password>
+</login>
+
+### Try too large of a request
+POST {{baseUrl}}/api/content
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "user_id": "{{userId}}",
+  "content_id": "large-content",
+  "content_type": "text",
+  "title": "Large Content",
+  "content_data": {
+    "text": "{{$randomInt 10000 20000 CHARS}}"
+  }
+}

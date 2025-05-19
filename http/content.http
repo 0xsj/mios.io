@@ -1,4 +1,4 @@
-@baseUrl = http://localhost:8080
+@baseUrl = http://localhost:8081
 @contentType = application/json
 
 ### First, login to get the token
@@ -11,21 +11,22 @@ Content-Type: {{contentType}}
   "password": "Password123!"
 }
 
-### Store tokens and IDs from login response
+### Store tokens and user ID
 @accessToken = {{login.response.body.data.access_token}}
 @userId = {{login.response.body.data.user.id}}
 
-### Create Content Item
+### Create Content Item - Link
+# @name createLink
 POST {{baseUrl}}/api/content
 Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
 {
-  "user_id": "444686e7-9c3b-43fa-871a-077b0f145473",
-  "content_id": "content123",
+  "user_id": "{{userId}}",
+  "content_id": "twitter-link",
   "content_type": "link",
-  "title": "My Link",
-  "href": "https://example.com",
+  "title": "My Twitter",
+  "href": "https://twitter.com/testuser",
   "desktop_x": 0,
   "desktop_y": 0,
   "desktop_style": "2x2",
@@ -38,33 +39,102 @@ Authorization: Bearer {{accessToken}}
   "overrides": {}
 }
 
+### Store content item ID
+@linkId = {{createLink.response.body.data.id}}
+
+### Create Content Item - Text
+# @name createText
+POST {{baseUrl}}/api/content
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "user_id": "{{userId}}",
+  "content_id": "bio-text",
+  "content_type": "text",
+  "title": "About Me",
+  "desktop_x": 0,
+  "desktop_y": 1,
+  "desktop_style": "2x1",
+  "mobile_x": 0,
+  "mobile_y": 1,
+  "mobile_style": "1x1",
+  "content_data": {
+    "text": "This is my bio text that shows up on my profile page."
+  }
+}
+
+### Store text content item ID
+@textId = {{createText.response.body.data.id}}
+
+### Create Content Item - Image
+# @name createImage
+POST {{baseUrl}}/api/content
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "user_id": "{{userId}}",
+  "content_id": "profile-image",
+  "content_type": "image",
+  "url": "https://via.placeholder.com/300",
+  "media_type": "image/jpeg",
+  "desktop_x": 1,
+  "desktop_y": 0,
+  "desktop_style": "2x2",
+  "mobile_x": 0,
+  "mobile_y": 2,
+  "mobile_style": "1x1",
+  "content_data": {
+    "alt_text": "Profile image"
+  }
+}
+
+### Store image content item ID
+@imageId = {{createImage.response.body.data.id}}
+
 ### Get Content Item
-GET {{baseUrl}}/api/content/content123
+GET {{baseUrl}}/api/content/{{linkId}}
 Authorization: Bearer {{accessToken}}
 
 ### Get User Content Items
 GET {{baseUrl}}/api/content/user/{{userId}}
 
 ### Update Content Item
-PUT {{baseUrl}}/api/content/item123
+PUT {{baseUrl}}/api/content/{{linkId}}
 Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
 {
-  "title": "Updated Link",
-  "href": "https://example.com/updated"
+  "title": "My Updated Twitter Link",
+  "href": "https://twitter.com/updated_handle",
+  "desktop_style": "2x1",
+  "content_data": {
+    "custom_color": "#1DA1F2"
+  }
 }
 
 ### Update Content Item Position
-PATCH {{baseUrl}}/api/content/item123/position
+PATCH {{baseUrl}}/api/content/{{linkId}}/position
 Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
 {
-  "desktop_x": 1,
-  "desktop_y": 1
+  "desktop_x": 2,
+  "desktop_y": 2
+}
+
+### Test unauthorized content creation (should fail)
+POST {{baseUrl}}/api/content
+Content-Type: {{contentType}}
+
+{
+  "user_id": "{{userId}}",
+  "content_id": "unauthorized-item",
+  "content_type": "link",
+  "title": "Unauthorized Item"
 }
 
 ### Delete Content Item
-DELETE {{baseUrl}}/api/content/item123
+DELETE {{baseUrl}}/api/content/{{textId}}
 Authorization: Bearer {{accessToken}}

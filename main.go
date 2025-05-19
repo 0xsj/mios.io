@@ -134,7 +134,10 @@ func main() {
 	appLogger.Info("Initializing OpenAPI handler...")
 
 	appLogger.Info("Setting up server...")
-	server := api.NewServer(cfg, queries, serverLogger, redisClient)
+	server, err := api.NewServer(cfg, queries, serverLogger, redisClient)
+	if err != nil {
+		appLogger.Fatalf("Failed to initialize server: %v", err)
+	}
 
 	server.Router().Use(middleware.LoggingMiddleware(middlewareLogger))
 

@@ -30,7 +30,7 @@ func Float64(f float64) *float64 {
 	return &f
 }
 
-func getValueOrEmpty(ptr *string) string {
+func GetValueOrEmpty(ptr *string) string {
 	if ptr == nil {
 		return ""
 	}

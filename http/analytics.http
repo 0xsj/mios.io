@@ -1,4 +1,4 @@
-@baseUrl = http://localhost:8080
+@baseUrl = http://localhost:8081
 @contentType = application/json
 
 ### First, login to get the token
@@ -11,9 +11,16 @@ Content-Type: {{contentType}}
   "password": "Password123!"
 }
 
-### Store tokens and IDs from login response
+### Store tokens and user ID
 @accessToken = {{login.response.body.data.access_token}}
 @userId = {{login.response.body.data.user.id}}
+
+### Get User Content Items (to get a content item ID)
+# @name getUserContent
+GET {{baseUrl}}/api/content/user/{{userId}}
+
+### Store an item ID from the response (assuming the first item)
+@itemId = {{getUserContent.response.body.data[0].id}}
 
 ### Record a click
 POST {{baseUrl}}/api/analytics/clicks
@@ -21,7 +28,7 @@ Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
 {
-  "item_id": "item-uuid-here",
+  "item_id": "{{itemId}}",
   "user_id": "{{userId}}",
   "ip_address": "127.0.0.1",
   "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -34,7 +41,7 @@ Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
 {
-  "profile_id": "profile-uuid-here",
+  "profile_id": "{{userId}}",
   "user_id": "{{userId}}",
   "ip_address": "127.0.0.1",
   "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -42,17 +49,17 @@ Authorization: Bearer {{accessToken}}
 }
 
 ### Get content item analytics
-GET {{baseUrl}}/api/analytics/items/item-uuid-here?page=1&page_size=10
+GET {{baseUrl}}/api/analytics/items/{{itemId}}?page=1&page_size=10
 Authorization: Bearer {{accessToken}}
 
 ### Get content item analytics by time range
-POST {{baseUrl}}/api/analytics/items/item-uuid-here/time-range
+POST {{baseUrl}}/api/analytics/items/{{itemId}}/time-range
 Content-Type: {{contentType}}
 Authorization: Bearer {{accessToken}}
 
 {
   "start_date": "2025-01-01T00:00:00Z",
-  "end_date": "2025-04-28T23:59:59Z",
+  "end_date": "2025-12-31T23:59:59Z",
   "limit": 10
 }
 
@@ -67,7 +74,7 @@ Authorization: Bearer {{accessToken}}
 
 {
   "start_date": "2025-01-01T00:00:00Z",
-  "end_date": "2025-04-28T23:59:59Z",
+  "end_date": "2025-12-31T23:59:59Z",
   "limit": 10
 }
 
@@ -78,7 +85,7 @@ Authorization: Bearer {{accessToken}}
 
 {
   "start_date": "2025-01-01T00:00:00Z",
-  "end_date": "2025-04-28T23:59:59Z",
+  "end_date": "2025-12-31T23:59:59Z",
   "limit": 10
 }
 
@@ -97,6 +104,9 @@ Authorization: Bearer {{accessToken}}
 
 {
   "start_date": "2025-01-01T00:00:00Z",
-  "end_date": "2025-04-28T23:59:59Z",
+  "end_date": "2025-12-31T23:59:59Z",
   "limit": 5
 }
+
+### Test for unauthorized analytics access (should fail)
+GET {{baseUrl}}/api/analytics/users/{{userId}}/dashboard

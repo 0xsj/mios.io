@@ -1,4 +1,9 @@
-@baseUrl = http://localhost:8080
+@baseUrl = http://localhost:8081
+@contentType = application/json
 
-### Health Check
+### Basic Health Check
+# @name health
 GET {{baseUrl}}/health
+Content-Type: {{contentType}}
+
+### Response should show service is healthy

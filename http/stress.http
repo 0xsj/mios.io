@@ -1,0 +1,140 @@
+@baseUrl = http://localhost:8081
+@contentType = application/json
+
+### Stress Test: User Registration
+# @name stressRegister
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "username": "stresstest{{$timestamp}}",
+  "handle": "stresstest{{$timestamp}}",
+  "email": "stress{{$timestamp}}@example.com",
+  "password": "StressTest123!",
+  "first_name": "Stress",
+  "last_name": "Test",
+  "bio": "This is a stress test user"
+}
+
+### Store the user ID
+@stressUserId = {{stressRegister.response.body.data.id}}
+
+### Login with the stress test user
+# @name stressLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "stress{{$timestamp}}@example.com",
+  "password": "StressTest123!"
+}
+
+### Store the access token
+@stressToken = {{stressLogin.response.body.data.access_token}}
+
+### Create multiple content items in rapid succession
+# @name createMultipleContent
+POST {{baseUrl}}/api/content
+Content-Type: {{contentType}}
+Authorization: Bearer {{stressToken}}
+
+{
+  "user_id": "{{stressUserId}}",
+  "content_id": "stress-item-1-{{$timestamp}}",
+  "content_type": "link",
+  "title": "Stress Test Link 1",
+  "href": "https://example.com/stress-1",
+  "desktop_x": 0,
+  "desktop_y": 0
+}
+
+### Create another content item
+POST {{baseUrl}}/api/content
+Content-Type: {{contentType}}
+Authorization: Bearer {{stressToken}}
+
+{
+  "user_id": "{{stressUserId}}",
+  "content_id": "stress-item-2-{{$timestamp}}",
+  "content_type": "link",
+  "title": "Stress Test Link 2",
+  "href": "https://example.com/stress-2",
+  "desktop_x": 1,
+  "desktop_y": 0
+}
+
+### And another
+POST {{baseUrl}}/api/content
+Content-Type: {{contentType}}
+Authorization: Bearer {{stressToken}}
+
+{
+  "user_id": "{{stressUserId}}",
+  "content_id": "stress-item-3-{{$timestamp}}",
+  "content_type": "link",
+  "title": "Stress Test Link 3",
+  "href": "https://example.com/stress-3",
+  "desktop_x": 2,
+  "desktop_y": 0
+}
+
+### Get User Content Items (to verify they were all created)
+GET {{baseUrl}}/api/content/user/{{stressUserId}}
+Authorization: Bearer {{stressToken}}
+
+### Generate multiple analytics events in rapid succession
+POST {{baseUrl}}/api/analytics/clicks
+Content-Type: {{contentType}}
+Authorization: Bearer {{stressToken}}
+
+{
+  "item_id": "{{stressUserId}}",
+  "user_id": "{{stressUserId}}",
+  "ip_address": "127.0.0.1",
+  "referrer": "https://google.com/1"
+}
+
+### Another click
+POST {{baseUrl}}/api/analytics/clicks
+Content-Type: {{contentType}}
+Authorization: Bearer {{stressToken}}
+
+{
+  "item_id": "{{stressUserId}}",
+  "user_id": "{{stressUserId}}",
+  "ip_address": "127.0.0.1",
+  "referrer": "https://google.com/2"
+}
+
+### And another click
+POST {{baseUrl}}/api/analytics/clicks
+Content-Type: {{contentType}}
+Authorization: Bearer {{stressToken}}
+
+{
+  "item_id": "{{stressUserId}}",
+  "user_id": "{{stressUserId}}",
+  "ip_address": "127.0.0.1",
+  "referrer": "https://google.com/3"
+}
+
+### Run analytics dashboard query which is more computationally intensive
+GET {{baseUrl}}/api/analytics/users/{{stressUserId}}/dashboard
+Authorization: Bearer {{stressToken}}
+
+### Clean up by deleting the stress test user
+# @name adminLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "admin@example.com",
+  "password": "AdminPassword123!"
+}
+
+### Store admin token
+@adminToken = {{adminLogin.response.body.data.access_token}}
+
+### Delete stress test user
+DELETE {{baseUrl}}/api/users/{{stressUserId}}
+Authorization: Bearer {{adminToken}}

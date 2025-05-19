@@ -1,0 +1,61 @@
+@baseUrl = http://localhost:8081
+@contentType = application/json
+
+### First, login to get the token
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "Password123!"
+}
+
+### Store token
+@accessToken = {{login.response.body.data.access_token}}
+
+### Get Link Metadata by URL
+GET {{baseUrl}}/api/link-metadata/url?url=https://github.com
+Authorization: Bearer {{accessToken}}
+
+### Fetch Fresh Link Metadata
+POST {{baseUrl}}/api/link-metadata/fetch
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "url": "https://twitter.com"
+}
+
+### List Known Platforms
+GET {{baseUrl}}/api/link-metadata/platforms
+Authorization: Bearer {{accessToken}}
+
+### Test metadata for a social media URL
+GET {{baseUrl}}/api/link-metadata/url?url=https://instagram.com/testuser
+Authorization: Bearer {{accessToken}}
+
+### Test metadata for a news site URL
+GET {{baseUrl}}/api/link-metadata/url?url=https://nytimes.com
+Authorization: Bearer {{accessToken}}
+
+### Test metadata for a YouTube URL
+GET {{baseUrl}}/api/link-metadata/url?url=https://youtube.com
+Authorization: Bearer {{accessToken}}
+
+### Test metadata fetch with a malformed URL (should handle gracefully)
+POST {{baseUrl}}/api/link-metadata/fetch
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "url": "invalid-url"
+}
+
+### Test unauthorized access to protected endpoint (should fail)
+POST {{baseUrl}}/api/link-metadata/fetch
+Content-Type: {{contentType}}
+
+{
+  "url": "https://example.com"
+}
