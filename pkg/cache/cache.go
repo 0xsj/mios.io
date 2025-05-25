@@ -171,22 +171,27 @@ func (kb *CacheKeyBuilder) ProfileDashboard(userID string, days int) string {
 }
 
 func (kb *CacheKeyBuilder) ContentItemAnalytics(itemID string, timeRange string) string {
-	hash := kb.hashString(timeRange)
+	hash := kb.HashString(timeRange)
 	return fmt.Sprintf("analytics:item:%s:range:%s", itemID, hash)
 }
 
 func (kb *CacheKeyBuilder) TimeRangeAnalytics(userID, startDate, endDate string) string {
-	hash := kb.hashString(startDate + endDate)
+	hash := kb.HashString(startDate + endDate)
 	return fmt.Sprintf("analytics:user:%s:timerange:%s", userID, hash)
 }
 
 func (kb *CacheKeyBuilder) ReferrerAnalytics(userID, startDate, endDate string, limit int) string {
-	hash := kb.hashString(fmt.Sprintf("%s:%s:%d", startDate, endDate, limit))
+	hash := kb.HashString(fmt.Sprintf("%s:%s:%d", startDate, endDate, limit))
 	return fmt.Sprintf("analytics:referrer:%s:range:%s", userID, hash)
 }
 
+func (kb *CacheKeyBuilder) PageViewAnalytics(userID, startDate, endDate string, limit int) string {
+	hash := kb.HashString(fmt.Sprintf("%s:%s:%d", startDate, endDate, limit))
+	return fmt.Sprintf("analytics:pageviews:user:%s:range:%s", userID, hash)
+}
+
 func (kb *CacheKeyBuilder) LinkMetadata(url string) string {
-	hash := kb.hashString(url)
+	hash := kb.HashString(url)
 	return fmt.Sprintf("metadata:url:%s", hash)
 }
 
@@ -194,7 +199,8 @@ func (kb *CacheKeyBuilder) UserContent(userID string) string {
 	return fmt.Sprintf("content:user:%s", userID)
 }
 
-func (kb *CacheKeyBuilder) hashString(s string) string {
+// HashString is exported so it can be used from other packages
+func (kb *CacheKeyBuilder) HashString(s string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(s)))[:8]
 }
 
