@@ -47,4 +47,3 @@ func (d *DatabaseMetricsCollector) collectPoolMetrics() {
 	d.metrics.DBConnectionsIdle.Set(float64(stats.IdleConns()))
 }
 
-// repository/instrumented_repository.go
