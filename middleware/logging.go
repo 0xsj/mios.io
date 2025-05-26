@@ -16,6 +16,7 @@ import (
 type responseWriter struct {
 	gin.ResponseWriter
 	body *bytes.Buffer
+	statusCode int
 }
 
 func (w responseWriter) Write(b []byte) (int, error) {

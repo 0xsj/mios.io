@@ -1,4 +1,7 @@
+version: "3.8"
+
 services:
+  # Application Services
   postgres:
     image: postgres:14
     container_name: gin-sqlc-postgres
@@ -17,6 +20,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   redis:
     image: redis:alpine
@@ -32,6 +36,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   mailhog:
     image: mailhog/mailhog
@@ -51,58 +56,154 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
-  # app:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   container_name: gin-sqlc-app
-  #   ports:
-  #     - "8081:8080"
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #     mailhog:
-  #       condition: service_healthy
-  #   environment:
-  #     # Existing environment variables
-  #     - ENVIRONMENT=development
-  #     - HOST=0.0.0.0
-  #     - PORT=8080
-  #     - DB_USERNAME=devuser
-  #     - DB_PASSWORD=devpass
-  #     - DB_HOSTNAME=postgres
-  #     - DB_PORT=5432
-  #     - DB_NAME=devdb
-  #     - JWT_SECRET=askimaskimaskimasecurelongersecret1234
-  #     - TOKEN_HOUR_LIFESPAN=24
-  #     - API_SECRET=jagiya
-  #     - VERSION=1
-  #     - GIN_MODE=release
-  #     # Redis environment variables
-  #     - REDIS_HOST=redis
-  #     - REDIS_PORT=6379
-  #     - REDIS_PASSWORD=
-  #     - REDIS_DB=0
-  #     # Email configuration
-  #     - SMTP_HOST=mailhog
-  #     - SMTP_PORT=1025
-  #     - SMTP_USERNAME=
-  #     - SMTP_PASSWORD=
-  #     - SMTP_FROM=no-reply@localhost
-  #     - SMTP_FROM_NAME=LinkInBio App
-  #     - SMTP_SECURE=false
-  #   networks:
-  #     - app-network
-  #   restart: on-failure
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gin-sqlc-app
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailhog:
+        condition: service_healthy
+    environment:
+      # Application environment variables
+      - ENVIRONMENT=development
+      - HOST=0.0.0.0
+      - PORT=8080
+      - DB_USERNAME=devuser
+      - DB_PASSWORD=devpass
+      - DB_HOSTNAME=postgres
+      - DB_PORT=5432
+      - DB_NAME=devdb
+      - JWT_SECRET=askimaskimaskimasecurelongersecret1234
+      - TOKEN_HOUR_LIFESPAN=24
+      - API_SECRET=jagiya
+      - VERSION=1
+      - GIN_MODE=release
+      # Redis environment variables
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_DB=0
+      # Email configuration
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - SMTP_USERNAME=
+      - SMTP_PASSWORD=
+      - SMTP_FROM=no-reply@localhost
+      - SMTP_FROM_NAME=LinkInBio App
+      - SMTP_SECURE=false
+    networks:
+      - app-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Monitoring Services
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: gin-sqlc-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--storage.tsdb.retention.time=200h"
+      - "--web.enable-lifecycle"
+    networks:
+      - monitoring
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:9090/-/healthy",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: gin-sqlc-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: gin-sqlc-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager-data:/alertmanager
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+      - "--web.external-url=http://localhost:9093"
+    networks:
+      - monitoring
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:9093/-/healthy",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
 
 networks:
   app-network:
+    driver: bridge
+  monitoring:
     driver: bridge
 
 volumes:
   postgres-data:
   redis-data:
   mailhog-data:
+  prometheus-data:
+  grafana-data:
+  alertmanager-data:
