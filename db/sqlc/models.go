@@ -20,6 +20,12 @@ type Analytic struct {
 	Referrer    *string    `json:"referrer"`
 	ClickedAt   *time.Time `json:"clicked_at"`
 	PageView    *bool      `json:"page_view"`
+	Country     *string    `json:"country"`
+	DeviceType  *string    `json:"device_type"`
+	Browser     *string    `json:"browser"`
+	UtmSource   *string    `json:"utm_source"`
+	UtmMedium   *string    `json:"utm_medium"`
+	UtmCampaign *string    `json:"utm_campaign"`
 }
 
 type Auth struct {
@@ -40,27 +46,47 @@ type Auth struct {
 }
 
 type ContentItem struct {
-	ItemID       uuid.UUID    `json:"item_id"`
-	UserID       uuid.UUID    `json:"user_id"`
-	ContentID    string       `json:"content_id"`
-	ContentType  string       `json:"content_type"`
-	Title        *string      `json:"title"`
-	Href         *string      `json:"href"`
-	Url          *string      `json:"url"`
-	MediaType    *string      `json:"media_type"`
-	DesktopX     *int32       `json:"desktop_x"`
-	DesktopY     *int32       `json:"desktop_y"`
-	DesktopStyle *string      `json:"desktop_style"`
-	MobileX      *int32       `json:"mobile_x"`
-	MobileY      *int32       `json:"mobile_y"`
-	MobileStyle  *string      `json:"mobile_style"`
-	Halign       *string      `json:"halign"`
-	Valign       *string      `json:"valign"`
-	ContentData  pgtype.JSONB `json:"content_data"`
-	Overrides    pgtype.JSONB `json:"overrides"`
-	IsActive     *bool        `json:"is_active"`
-	CreatedAt    *time.Time   `json:"created_at"`
-	UpdatedAt    *time.Time   `json:"updated_at"`
+	ItemID        uuid.UUID    `json:"item_id"`
+	UserID        uuid.UUID    `json:"user_id"`
+	ContentID     string       `json:"content_id"`
+	ContentType   string       `json:"content_type"`
+	Title         *string      `json:"title"`
+	Href          *string      `json:"href"`
+	Url           *string      `json:"url"`
+	MediaType     *string      `json:"media_type"`
+	DesktopX      *int32       `json:"desktop_x"`
+	DesktopY      *int32       `json:"desktop_y"`
+	DesktopStyle  *string      `json:"desktop_style"`
+	MobileX       *int32       `json:"mobile_x"`
+	MobileY       *int32       `json:"mobile_y"`
+	MobileStyle   *string      `json:"mobile_style"`
+	Halign        *string      `json:"halign"`
+	Valign        *string      `json:"valign"`
+	ContentData   pgtype.JSONB `json:"content_data"`
+	Overrides     pgtype.JSONB `json:"overrides"`
+	IsActive      *bool        `json:"is_active"`
+	CreatedAt     *time.Time   `json:"created_at"`
+	UpdatedAt     *time.Time   `json:"updated_at"`
+	CustomStyling pgtype.JSONB `json:"custom_styling"`
+	EmbedData     pgtype.JSONB `json:"embed_data"`
+	AutoEmbed     *bool        `json:"auto_embed"`
+}
+
+type Conversion struct {
+	ConversionID    uuid.UUID      `json:"conversion_id"`
+	AnalyticsID     *uuid.UUID     `json:"analytics_id"`
+	ConversionType  string         `json:"conversion_type"`
+	ConversionValue pgtype.Numeric `json:"conversion_value"`
+	ConversionData  pgtype.JSONB   `json:"conversion_data"`
+	CreatedAt       *time.Time     `json:"created_at"`
+}
+
+type EmbedConfig struct {
+	ConfigID      uuid.UUID  `json:"config_id"`
+	Platform      string     `json:"platform"`
+	EmbedTemplate string     `json:"embed_template"`
+	IsActive      *bool      `json:"is_active"`
+	CreatedAt     *time.Time `json:"created_at"`
 }
 
 type LinkMetadatum struct {
@@ -94,34 +120,34 @@ type OauthAccount struct {
 }
 
 type Theme struct {
-	ThemeID         uuid.UUID  `json:"theme_id"`
-	Name            string     `json:"name"`
-	BackgroundColor *string    `json:"background_color"`
-	TextColor       *string    `json:"text_color"`
-	ButtonStyle     *string    `json:"button_style"`
-	FontFamily      *string    `json:"font_family"`
-	IsPremium       *bool      `json:"is_premium"`
-	IsActive        *bool      `json:"is_active"`
-	CreatedAt       *time.Time `json:"created_at"`
-	UpdatedAt       *time.Time `json:"updated_at"`
+	ThemeID         uuid.UUID    `json:"theme_id"`
+	Name            string       `json:"name"`
+	Description     *string      `json:"description"`
+	PreviewImageUrl *string      `json:"preview_image_url"`
+	IsPremium       *bool        `json:"is_premium"`
+	Config          pgtype.JSONB `json:"config"`
+	CreatedAt       *time.Time   `json:"created_at"`
+	UpdatedAt       *time.Time   `json:"updated_at"`
 }
 
 type User struct {
-	UserID          uuid.UUID  `json:"user_id"`
-	Username        string     `json:"username"`
-	Handle          string     `json:"handle"`
-	Email           string     `json:"email"`
-	FirstName       *string    `json:"first_name"`
-	LastName        *string    `json:"last_name"`
-	Bio             *string    `json:"bio"`
-	ProfileImageUrl *string    `json:"profile_image_url"`
-	LayoutVersion   *string    `json:"layout_version"`
-	CustomDomain    *string    `json:"custom_domain"`
-	IsPremium       *bool      `json:"is_premium"`
-	IsAdmin         *bool      `json:"is_admin"`
-	Onboarded       *bool      `json:"onboarded"`
-	CreatedAt       *time.Time `json:"created_at"`
-	UpdatedAt       *time.Time `json:"updated_at"`
+	UserID             uuid.UUID    `json:"user_id"`
+	Username           string       `json:"username"`
+	Handle             string       `json:"handle"`
+	Email              string       `json:"email"`
+	FirstName          *string      `json:"first_name"`
+	LastName           *string      `json:"last_name"`
+	Bio                *string      `json:"bio"`
+	ProfileImageUrl    *string      `json:"profile_image_url"`
+	LayoutVersion      *string      `json:"layout_version"`
+	CustomDomain       *string      `json:"custom_domain"`
+	IsPremium          *bool        `json:"is_premium"`
+	IsAdmin            *bool        `json:"is_admin"`
+	Onboarded          *bool        `json:"onboarded"`
+	CreatedAt          *time.Time   `json:"created_at"`
+	UpdatedAt          *time.Time   `json:"updated_at"`
+	ThemeID            *uuid.UUID   `json:"theme_id"`
+	ThemeCustomization pgtype.JSONB `json:"theme_customization"`
 }
 
 type UserTheme struct {
