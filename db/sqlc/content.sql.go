@@ -19,7 +19,7 @@ INSERT INTO content_items (
     halign, valign, content_data, overrides, is_active
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
-) RETURNING item_id, user_id, content_id, content_type, title, href, url, media_type, desktop_x, desktop_y, desktop_style, mobile_x, mobile_y, mobile_style, halign, valign, content_data, overrides, is_active, created_at, updated_at
+) RETURNING item_id, user_id, content_id, content_type, title, href, url, media_type, desktop_x, desktop_y, desktop_style, mobile_x, mobile_y, mobile_style, halign, valign, content_data, overrides, is_active, created_at, updated_at, custom_styling, embed_data, auto_embed
 `
 
 type CreateContentItemParams struct {
@@ -87,6 +87,9 @@ func (q *Queries) CreateContentItem(ctx context.Context, arg CreateContentItemPa
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.CustomStyling,
+		&i.EmbedData,
+		&i.AutoEmbed,
 	)
 	return &i, err
 }
@@ -102,7 +105,7 @@ func (q *Queries) DeleteContentItem(ctx context.Context, itemID uuid.UUID) error
 }
 
 const getContentItem = `-- name: GetContentItem :one
-SELECT item_id, user_id, content_id, content_type, title, href, url, media_type, desktop_x, desktop_y, desktop_style, mobile_x, mobile_y, mobile_style, halign, valign, content_data, overrides, is_active, created_at, updated_at FROM content_items
+SELECT item_id, user_id, content_id, content_type, title, href, url, media_type, desktop_x, desktop_y, desktop_style, mobile_x, mobile_y, mobile_style, halign, valign, content_data, overrides, is_active, created_at, updated_at, custom_styling, embed_data, auto_embed FROM content_items
 WHERE item_id = $1 LIMIT 1
 `
 
@@ -131,12 +134,15 @@ func (q *Queries) GetContentItem(ctx context.Context, itemID uuid.UUID) (*Conten
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.CustomStyling,
+		&i.EmbedData,
+		&i.AutoEmbed,
 	)
 	return &i, err
 }
 
 const getUserContentItems = `-- name: GetUserContentItems :many
-SELECT item_id, user_id, content_id, content_type, title, href, url, media_type, desktop_x, desktop_y, desktop_style, mobile_x, mobile_y, mobile_style, halign, valign, content_data, overrides, is_active, created_at, updated_at FROM content_items
+SELECT item_id, user_id, content_id, content_type, title, href, url, media_type, desktop_x, desktop_y, desktop_style, mobile_x, mobile_y, mobile_style, halign, valign, content_data, overrides, is_active, created_at, updated_at, custom_styling, embed_data, auto_embed FROM content_items
 WHERE user_id = $1
 ORDER BY created_at DESC
 `
@@ -172,6 +178,9 @@ func (q *Queries) GetUserContentItems(ctx context.Context, userID uuid.UUID) ([]
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.CustomStyling,
+			&i.EmbedData,
+			&i.AutoEmbed,
 		); err != nil {
 			return nil, err
 		}

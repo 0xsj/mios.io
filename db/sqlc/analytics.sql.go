@@ -18,7 +18,7 @@ INSERT INTO analytics (
     item_id, user_id, ip_address, user_agent, referrer, page_view
 ) VALUES (
     $1, $2, $3, $4, $5, false
-) RETURNING analytics_id, item_id, user_id, ip_address, user_agent, referrer, clicked_at, page_view
+) RETURNING analytics_id, item_id, user_id, ip_address, user_agent, referrer, clicked_at, page_view, country, device_type, browser, utm_source, utm_medium, utm_campaign
 `
 
 type CreateAnalyticsEntryParams struct {
@@ -49,6 +49,12 @@ func (q *Queries) CreateAnalyticsEntry(ctx context.Context, arg CreateAnalyticsE
 		&i.Referrer,
 		&i.ClickedAt,
 		&i.PageView,
+		&i.Country,
+		&i.DeviceType,
+		&i.Browser,
+		&i.UtmSource,
+		&i.UtmMedium,
+		&i.UtmCampaign,
 	)
 	return &i, err
 }
@@ -58,7 +64,7 @@ INSERT INTO analytics (
     item_id, user_id, ip_address, user_agent, referrer, page_view
 ) VALUES (
     $1, $2, $3, $4, $5, true
-) RETURNING analytics_id, item_id, user_id, ip_address, user_agent, referrer, clicked_at, page_view
+) RETURNING analytics_id, item_id, user_id, ip_address, user_agent, referrer, clicked_at, page_view, country, device_type, browser, utm_source, utm_medium, utm_campaign
 `
 
 type CreatePageViewEntryParams struct {
@@ -87,6 +93,12 @@ func (q *Queries) CreatePageViewEntry(ctx context.Context, arg CreatePageViewEnt
 		&i.Referrer,
 		&i.ClickedAt,
 		&i.PageView,
+		&i.Country,
+		&i.DeviceType,
+		&i.Browser,
+		&i.UtmSource,
+		&i.UtmMedium,
+		&i.UtmCampaign,
 	)
 	return &i, err
 }
@@ -105,7 +117,7 @@ func (q *Queries) GetContentItemClickCount(ctx context.Context, itemID uuid.UUID
 }
 
 const getItemAnalytics = `-- name: GetItemAnalytics :many
-SELECT analytics_id, item_id, user_id, ip_address, user_agent, referrer, clicked_at, page_view FROM analytics
+SELECT analytics_id, item_id, user_id, ip_address, user_agent, referrer, clicked_at, page_view, country, device_type, browser, utm_source, utm_medium, utm_campaign FROM analytics
 WHERE item_id = $1
 ORDER BY clicked_at DESC
 LIMIT $2 OFFSET $3
@@ -136,6 +148,12 @@ func (q *Queries) GetItemAnalytics(ctx context.Context, arg GetItemAnalyticsPara
 			&i.Referrer,
 			&i.ClickedAt,
 			&i.PageView,
+			&i.Country,
+			&i.DeviceType,
+			&i.Browser,
+			&i.UtmSource,
+			&i.UtmMedium,
+			&i.UtmCampaign,
 		); err != nil {
 			return nil, err
 		}
@@ -430,7 +448,7 @@ func (q *Queries) GetUniqueVisitorsByDay(ctx context.Context, arg GetUniqueVisit
 }
 
 const getUserAnalytics = `-- name: GetUserAnalytics :many
-SELECT analytics_id, item_id, user_id, ip_address, user_agent, referrer, clicked_at, page_view FROM analytics
+SELECT analytics_id, item_id, user_id, ip_address, user_agent, referrer, clicked_at, page_view, country, device_type, browser, utm_source, utm_medium, utm_campaign FROM analytics
 WHERE user_id = $1
 ORDER BY clicked_at DESC
 LIMIT $2 OFFSET $3
@@ -460,6 +478,12 @@ func (q *Queries) GetUserAnalytics(ctx context.Context, arg GetUserAnalyticsPara
 			&i.Referrer,
 			&i.ClickedAt,
 			&i.PageView,
+			&i.Country,
+			&i.DeviceType,
+			&i.Browser,
+			&i.UtmSource,
+			&i.UtmMedium,
+			&i.UtmCampaign,
 		); err != nil {
 			return nil, err
 		}

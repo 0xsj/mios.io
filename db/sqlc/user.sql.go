@@ -18,7 +18,7 @@ INSERT INTO users (
     is_premium, is_admin, onboarded
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
-) RETURNING user_id, username, handle, email, first_name, last_name, bio, profile_image_url, layout_version, custom_domain, is_premium, is_admin, onboarded, created_at, updated_at
+) RETURNING user_id, username, handle, email, first_name, last_name, bio, profile_image_url, layout_version, custom_domain, is_premium, is_admin, onboarded, created_at, updated_at, theme_id, theme_customization
 `
 
 type CreateUserParams struct {
@@ -68,6 +68,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*User, 
 		&i.Onboarded,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ThemeID,
+		&i.ThemeCustomization,
 	)
 	return &i, err
 }
@@ -83,7 +85,7 @@ func (q *Queries) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT user_id, username, handle, email, first_name, last_name, bio, profile_image_url, layout_version, custom_domain, is_premium, is_admin, onboarded, created_at, updated_at FROM users
+SELECT user_id, username, handle, email, first_name, last_name, bio, profile_image_url, layout_version, custom_domain, is_premium, is_admin, onboarded, created_at, updated_at, theme_id, theme_customization FROM users
 WHERE user_id = $1 LIMIT 1
 `
 
@@ -106,12 +108,14 @@ func (q *Queries) GetUser(ctx context.Context, userID uuid.UUID) (*User, error) 
 		&i.Onboarded,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ThemeID,
+		&i.ThemeCustomization,
 	)
 	return &i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT user_id, username, handle, email, first_name, last_name, bio, profile_image_url, layout_version, custom_domain, is_premium, is_admin, onboarded, created_at, updated_at FROM users
+SELECT user_id, username, handle, email, first_name, last_name, bio, profile_image_url, layout_version, custom_domain, is_premium, is_admin, onboarded, created_at, updated_at, theme_id, theme_customization FROM users
 WHERE email = $1 LIMIT 1
 `
 
@@ -134,12 +138,14 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, erro
 		&i.Onboarded,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ThemeID,
+		&i.ThemeCustomization,
 	)
 	return &i, err
 }
 
 const getUserByHandle = `-- name: GetUserByHandle :one
-SELECT user_id, username, handle, email, first_name, last_name, bio, profile_image_url, layout_version, custom_domain, is_premium, is_admin, onboarded, created_at, updated_at FROM users
+SELECT user_id, username, handle, email, first_name, last_name, bio, profile_image_url, layout_version, custom_domain, is_premium, is_admin, onboarded, created_at, updated_at, theme_id, theme_customization FROM users
 WHERE handle = $1 LIMIT 1
 `
 
@@ -162,12 +168,14 @@ func (q *Queries) GetUserByHandle(ctx context.Context, handle string) (*User, er
 		&i.Onboarded,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ThemeID,
+		&i.ThemeCustomization,
 	)
 	return &i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT user_id, username, handle, email, first_name, last_name, bio, profile_image_url, layout_version, custom_domain, is_premium, is_admin, onboarded, created_at, updated_at FROM users
+SELECT user_id, username, handle, email, first_name, last_name, bio, profile_image_url, layout_version, custom_domain, is_premium, is_admin, onboarded, created_at, updated_at, theme_id, theme_customization FROM users
 WHERE username = $1 LIMIT 1
 `
 
@@ -190,12 +198,14 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (*User
 		&i.Onboarded,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ThemeID,
+		&i.ThemeCustomization,
 	)
 	return &i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT user_id, username, handle, email, first_name, last_name, bio, profile_image_url, layout_version, custom_domain, is_premium, is_admin, onboarded, created_at, updated_at FROM users
+SELECT user_id, username, handle, email, first_name, last_name, bio, profile_image_url, layout_version, custom_domain, is_premium, is_admin, onboarded, created_at, updated_at, theme_id, theme_customization FROM users
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
 `
@@ -230,6 +240,8 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]*User, 
 			&i.Onboarded,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ThemeID,
+			&i.ThemeCustomization,
 		); err != nil {
 			return nil, err
 		}
