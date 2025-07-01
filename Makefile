@@ -1,6 +1,6 @@
 .PHONY: build run test clean migrate-up migrate-down migrate-create sqlc docker-up docker-down lint mock help
 
-BINARY_NAME=gin-sqlc-app
+BINARY_NAME=mios.io-app
 VERSION=0.1.0
 BUILD_DIR=./bin
 ENV_FILE=./dev.env

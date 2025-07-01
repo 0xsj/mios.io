@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/0xsj/gin-sqlc/log"
-	"github.com/0xsj/gin-sqlc/pkg/redis"
+	"github.com/0xsj/mios.io/log"
+	"github.com/0xsj/mios.io/pkg/redis"
 )
 
 type CacheService interface {

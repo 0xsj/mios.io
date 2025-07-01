@@ -4,7 +4,7 @@ package repository
 import (
 	"context"
 
-	"github.com/0xsj/gin-sqlc/pkg/errors"
+	"github.com/0xsj/mios.io/pkg/errors"
 	"github.com/jackc/pgx/v4"
 )
 

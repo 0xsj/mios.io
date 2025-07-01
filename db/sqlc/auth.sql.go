@@ -26,6 +26,17 @@ func (q *Queries) ClearResetToken(ctx context.Context, userID uuid.UUID) error {
 	return err
 }
 
+const clearVerificationToken = `-- name: ClearVerificationToken :exec
+UPDATE auth
+SET verification_token = NULL
+WHERE user_id = $1
+`
+
+func (q *Queries) ClearVerificationToken(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, clearVerificationToken, userID)
+	return err
+}
+
 const createAuth = `-- name: CreateAuth :exec
 INSERT INTO auth (
     user_id, password_hash, salt, is_email_verified, verification_token, reset_token, reset_token_expires_at

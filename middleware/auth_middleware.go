@@ -3,12 +3,12 @@ package middleware
 import (
 	"strings"
 
-	"github.com/0xsj/gin-sqlc/log"
-	"github.com/0xsj/gin-sqlc/pkg/context"
-	"github.com/0xsj/gin-sqlc/pkg/errors"
-	"github.com/0xsj/gin-sqlc/pkg/response"
-	"github.com/0xsj/gin-sqlc/pkg/token"
-	"github.com/0xsj/gin-sqlc/service"
+	"github.com/0xsj/mios.io/log"
+	"github.com/0xsj/mios.io/pkg/context"
+	"github.com/0xsj/mios.io/pkg/errors"
+	"github.com/0xsj/mios.io/pkg/response"
+	"github.com/0xsj/mios.io/pkg/token"
+	"github.com/0xsj/mios.io/service"
 	"github.com/gin-gonic/gin"
 )
 

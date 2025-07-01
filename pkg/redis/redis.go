@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/0xsj/gin-sqlc/config"
-	"github.com/0xsj/gin-sqlc/log"
+	"github.com/0xsj/mios.io/config"
+	"github.com/0xsj/mios.io/log"
 	"github.com/go-redis/redis/v8"
 )
 

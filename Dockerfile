@@ -29,7 +29,7 @@ RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app
 
 # Copy the binary from the builder stage
-COPY --from=builder /app/bin/gin-sqlc-app .
+COPY --from=builder /app/bin/mios.io-app .
 # Copy the environment file
 COPY dev.env .
 
@@ -37,4 +37,4 @@ COPY dev.env .
 EXPOSE 8080
 
 # Run the application
-CMD ["./gin-sqlc-app"]
+CMD ["./mios.io-app"]

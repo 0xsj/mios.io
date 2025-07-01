@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	db "github.com/0xsj/gin-sqlc/db/sqlc"
-	"github.com/0xsj/gin-sqlc/log"
-	apperror "github.com/0xsj/gin-sqlc/pkg/errors"
-	"github.com/0xsj/gin-sqlc/pkg/ptr"
+	db "github.com/0xsj/mios.io/db/sqlc"
+	"github.com/0xsj/mios.io/log"
+	apperror "github.com/0xsj/mios.io/pkg/errors"
+	"github.com/0xsj/mios.io/pkg/ptr"
 	"github.com/google/uuid"
 )
 

@@ -4,8 +4,8 @@ import (
 	stderrors "errors"
 	"net/http"
 
-	"github.com/0xsj/gin-sqlc/log"
-	"github.com/0xsj/gin-sqlc/pkg/errors"
+	"github.com/0xsj/mios.io/log"
+	"github.com/0xsj/mios.io/pkg/errors"
 	"github.com/gin-gonic/gin"
 )
 

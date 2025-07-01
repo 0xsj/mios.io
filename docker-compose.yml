@@ -1,10 +1,8 @@
-version: "3.8"
-
 services:
   # Application Services
   postgres:
     image: postgres:14
-    container_name: gin-sqlc-postgres
+    container_name: mios.io-postgres
     environment:
       POSTGRES_DB: devdb
       POSTGRES_USER: devuser
@@ -24,7 +22,7 @@ services:
 
   redis:
     image: redis:alpine
-    container_name: gin-sqlc-redis
+    container_name: mios.io-redis
     ports:
       - "6379:6379"
     volumes:
@@ -40,7 +38,7 @@ services:
 
   mailhog:
     image: mailhog/mailhog
-    container_name: gin-sqlc-mailhog
+    container_name: mios.io-mailhog
     ports:
       - "1025:1025" # SMTP server port
       - "8025:8025" # Web UI port
@@ -62,7 +60,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: gin-sqlc-app
+    container_name: mios.io-app
     ports:
       - "8081:8080"
     depends_on:
@@ -112,7 +110,7 @@ services:
   # Monitoring Services
   prometheus:
     image: prom/prometheus:latest
-    container_name: gin-sqlc-prometheus
+    container_name: mios.io-prometheus
     ports:
       - "9090:9090"
     volumes:
@@ -145,7 +143,7 @@ services:
 
   grafana:
     image: grafana/grafana:latest
-    container_name: gin-sqlc-grafana
+    container_name: mios.io-grafana
     ports:
       - "3000:3000"
     volumes:
@@ -167,7 +165,7 @@ services:
 
   alertmanager:
     image: prom/alertmanager:latest
-    container_name: gin-sqlc-alertmanager
+    container_name: mios.io-alertmanager
     ports:
       - "9093:9093"
     volumes:

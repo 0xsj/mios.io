@@ -81,3 +81,8 @@ WHERE user_id = $1;
 SELECT * FROM auth
 WHERE verification_token = $1
 LIMIT 1;
+
+-- name: ClearVerificationToken :exec
+UPDATE auth
+SET verification_token = NULL
+WHERE user_id = $1;
