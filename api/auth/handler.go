@@ -3,9 +3,9 @@ package auth
 import (
 	"net/http"
 
-	"github.com/0xsj/gin-sqlc/log"
-	"github.com/0xsj/gin-sqlc/pkg/response"
-	"github.com/0xsj/gin-sqlc/service"
+	"github.com/0xsj/mios.io/log"
+	"github.com/0xsj/mios.io/pkg/response"
+	"github.com/0xsj/mios.io/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -239,4 +239,28 @@ func (h *Handler) Logout(c *gin.Context) {
 
 	h.logger.Infof("User logged out successfully: %s", req.UserID)
 	response.Success(c, nil, "Logged out successfully")
+}
+
+// VerifyEmail handles email verification
+func (h *Handler) VerifyEmail(c *gin.Context) {
+	h.logger.Info("VerifyEmail handler called")
+
+	var req VerifyEmailRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Warnf("Invalid request format: %v", err)
+		response.Error(c, response.ErrBadRequestResponse, err.Error())
+		return
+	}
+
+	h.logger.Debugf("Received email verification request with token")
+
+	err := h.authService.VerifyEmail(c, req.Token)
+	if err != nil {
+		h.logger.Errorf("Failed to verify email: %v", err)
+		response.HandleError(c, err, h.logger)
+		return
+	}
+
+	h.logger.Info("Email verified successfully")
+	response.Success(c, nil, "Email verified successfully")
 }

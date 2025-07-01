@@ -12,7 +12,7 @@ alerting:
             - alertmanager:9093
 
 scrape_configs:
-  - job_name: "gin-sqlc-api"
+  - job_name: "mios.io-api"
     static_configs:
       - targets: ["host.docker.internal:8081"]
     metrics_path: "/metrics"

@@ -2,9 +2,9 @@ name: Go CI/CD
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [main, dev]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
@@ -26,64 +26,64 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.24'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24"
 
-    - name: Install dependencies
-      run: make install-tools
+      - name: Install dependencies
+        run: make install-tools
 
-    - name: Run migrations
-      run: make migrate-up
+      - name: Run migrations
+        run: make migrate-up
 
-    - name: Run tests
-      run: make test-coverage
+      - name: Run tests
+        run: make test-coverage
 
   lint:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.24'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24"
 
-    - name: Install dependencies
-      run: make install-tools
+      - name: Install dependencies
+        run: make install-tools
 
-    # - name: Format check
-    #   run: |
-    #     make format
-    #     if [[ -n $(git status --porcelain) ]]; then
-    #       echo "Code is not formatted. Run 'make format' locally."
-    #       exit 1
-    #     fi
+      # - name: Format check
+      #   run: |
+      #     make format
+      #     if [[ -n $(git status --porcelain) ]]; then
+      #       echo "Code is not formatted. Run 'make format' locally."
+      #       exit 1
+      #     fi
 
-    - name: Run linter
-      run: make lint
+      - name: Run linter
+        run: make lint
 
   build:
     name: Build
     runs-on: ubuntu-latest
     needs: [test, lint]
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.24'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24"
 
-    - name: Build
-      run: make build
+      - name: Build
+        run: make build
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: gin-sqlc-app
-        path: bin/gin-sqlc-app
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mios.io-app
+          path: bin/mios.io-app

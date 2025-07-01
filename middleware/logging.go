@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/0xsj/gin-sqlc/log"
+	"github.com/0xsj/mios.io/log"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )

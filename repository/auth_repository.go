@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	db "github.com/0xsj/gin-sqlc/db/sqlc"
-	"github.com/0xsj/gin-sqlc/log"
-	"github.com/0xsj/gin-sqlc/pkg/errors"
+	db "github.com/0xsj/mios.io/db/sqlc"
+	"github.com/0xsj/mios.io/log"
+	"github.com/0xsj/mios.io/pkg/errors"
 	"github.com/google/uuid"
 )
 
@@ -23,6 +23,9 @@ type AuthRepository interface {
 	SetAccountLockout(ctx context.Context, userID uuid.UUID, lockedUntil time.Time) error
 	StoreRefreshToken(ctx context.Context, userID uuid.UUID, refreshToken string) error
 	InvalidateRefreshToken(ctx context.Context, userID uuid.UUID) error
+	GetAuthByVerificationToken(ctx context.Context, verificationToken string) (*db.Auth, error) // Add this if not present
+	UpdateEmailVerificationStatus(ctx context.Context, userID uuid.UUID, isVerified bool) error // Add this
+	ClearVerificationToken(ctx context.Context, userID uuid.UUID) error // Add this
 }
 
 type CreateAuthParams struct {
@@ -282,4 +285,34 @@ func (r *SQLCAuthRepository) GetAuthByVerificationToken(ctx context.Context, ver
 
 	r.logger.Debugf("Auth record retrieved successfully by verification token")
 	return auth, nil
+}
+
+func (r *SQLCAuthRepository) UpdateEmailVerificationStatus(ctx context.Context, userID uuid.UUID, isVerified bool) error {
+	r.logger.Infof("Updating email verification status for user ID: %s to %v", userID, isVerified)
+
+	// This is the same as VerifyEmail, but more flexible
+	if isVerified {
+		return r.VerifyEmail(ctx, userID)
+	}
+
+	// If we need to unverify (rare case), we'd need a new SQLC query
+	// For now, we'll just handle the verify case
+	return errors.NewInternalError("Unverifying email is not supported", nil)
+}
+
+func (r *SQLCAuthRepository) ClearVerificationToken(ctx context.Context, userID uuid.UUID) error {
+	r.logger.Infof("Clearing verification token for user ID: %s", userID)
+
+	start := time.Now()
+	err := r.db.ClearVerificationToken(ctx, userID)
+	duration := time.Since(start)
+
+	if err != nil {
+		appErr := errors.HandleDBError(err, "verification token clearing")
+		appErr.Log(r.logger)
+		return appErr
+	}
+
+	r.logger.Infof("Verification token cleared successfully for user ID: %s in %v", userID, duration)
+	return nil
 }

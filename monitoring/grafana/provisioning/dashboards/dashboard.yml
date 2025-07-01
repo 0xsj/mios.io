@@ -1,7 +1,7 @@
 apiVersion: 1
 
 providers:
-  - name: "gin-sqlc"
+  - name: "mios.io"
     orgId: 1
     folder: ""
     type: file

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/0xsj/gin-sqlc/log"
+	"github.com/0xsj/mios.io/log"
 	"github.com/jackc/pgx/v4"
 )
 

@@ -1,5 +1,5 @@
 groups:
-  - name: gin-sqlc-alerts
+  - name: mios.io-alerts
     rules:
       - alert: HighErrorRate
         expr: rate(gin_sqlc_api_errors_total[5m]) > 0.1
@@ -38,10 +38,10 @@ groups:
           description: "Memory usage is {{ $value | humanize1024 }}B"
 
       - alert: ServiceDown
-        expr: up{job="gin-sqlc-api"} == 0
+        expr: up{job="mios.io-api"} == 0
         for: 1m
         labels:
           severity: critical
         annotations:
           summary: "Service is down"
-          description: "The gin-sqlc API service is not responding"
+          description: "The mios.io API service is not responding"

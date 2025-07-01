@@ -4,9 +4,9 @@ package service
 import (
 	"context"
 
-	"github.com/0xsj/gin-sqlc/log"
-	"github.com/0xsj/gin-sqlc/pkg/metrics"
-	"github.com/0xsj/gin-sqlc/pkg/token"
+	"github.com/0xsj/mios.io/log"
+	"github.com/0xsj/mios.io/pkg/metrics"
+	"github.com/0xsj/mios.io/pkg/token"
 )
 
 // InstrumentedAuthService wraps AuthService with metrics
