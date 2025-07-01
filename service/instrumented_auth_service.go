@@ -157,3 +157,15 @@ func (s *InstrumentedAuthService) SendAccountLockedEmail(ctx context.Context, em
 	s.metrics.RecordEmailSent("account_locked", status)
 	return err
 }
+
+
+func (s *InstrumentedAuthService) VerifyEmail(ctx context.Context, token string) error {
+	err := s.base.VerifyEmail(ctx, token)
+	
+	if err != nil {
+		s.metrics.RecordError("email_verification_failure", "auth_service", "warning")
+	}
+	// Remove the RecordBusinessEvent line - we don't need it
+	
+	return err
+}
