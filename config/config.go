@@ -1,3 +1,4 @@
+// config/config.go - Add storage configuration
 package config
 
 import (
@@ -28,6 +29,22 @@ type Config struct {
 	RedisPort     string `mapstructure:"REDIS_PORT"`
 	RedisPassword string `mapstructure:"REDIS_PASSWORD"`
 	RedisDB       int    `mapstructure:"REDIS_DB"`
+
+	// File Storage Configuration
+	StorageProvider   string `mapstructure:"STORAGE_PROVIDER"`     // "local" or "s3"
+	StorageBasePath   string `mapstructure:"STORAGE_BASE_PATH"`    // For local storage
+	StorageBaseURL    string `mapstructure:"STORAGE_BASE_URL"`     // For local storage
+	StorageCDNDomain  string `mapstructure:"STORAGE_CDN_DOMAIN"`   // Optional CDN domain
+	
+	// S3 Configuration
+	S3Region          string `mapstructure:"S3_REGION"`
+	S3Bucket          string `mapstructure:"S3_BUCKET"`
+	S3AccessKeyID     string `mapstructure:"S3_ACCESS_KEY_ID"`
+	S3SecretAccessKey string `mapstructure:"S3_SECRET_ACCESS_KEY"`
+	
+	// File Upload Limits
+	MaxFileSize   int64 `mapstructure:"MAX_FILE_SIZE"`     // in bytes
+	MaxAvatarSize int64 `mapstructure:"MAX_AVATAR_SIZE"`   // in bytes
 }
 
 func LoadConfig(name string, path string) (config Config) {
@@ -45,8 +62,29 @@ func LoadConfig(name string, path string) (config Config) {
 		return
 	}
 
+	// Set defaults
 	if config.TokenHourLifespan <= 0 {
 		config.TokenHourLifespan = 24
+	}
+	
+	if config.StorageProvider == "" {
+		config.StorageProvider = "local"
+	}
+	
+	if config.StorageBasePath == "" {
+		config.StorageBasePath = "./uploads"
+	}
+	
+	if config.StorageBaseURL == "" {
+		config.StorageBaseURL = "http://localhost:8081/uploads"
+	}
+	
+	if config.MaxFileSize <= 0 {
+		config.MaxFileSize = 50 * 1024 * 1024 // 50MB default
+	}
+	
+	if config.MaxAvatarSize <= 0 {
+		config.MaxAvatarSize = 10 * 1024 * 1024 // 10MB default
 	}
 
 	return
