@@ -7,7 +7,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/0xsj/gin-sqlc/log"
+	"github.com/0xsj/mios.io/log"
 )
 
 // EmailClient handles sending emails

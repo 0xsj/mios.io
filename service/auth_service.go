@@ -6,12 +6,12 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/0xsj/gin-sqlc/log"
-	"github.com/0xsj/gin-sqlc/pkg/email"
-	"github.com/0xsj/gin-sqlc/pkg/errors"
-	"github.com/0xsj/gin-sqlc/pkg/password"
-	"github.com/0xsj/gin-sqlc/pkg/token"
-	"github.com/0xsj/gin-sqlc/repository"
+	"github.com/0xsj/mios.io/log"
+	"github.com/0xsj/mios.io/pkg/email"
+	"github.com/0xsj/mios.io/pkg/errors"
+	"github.com/0xsj/mios.io/pkg/password"
+	"github.com/0xsj/mios.io/pkg/token"
+	"github.com/0xsj/mios.io/repository"
 	"github.com/google/uuid"
 )
 
@@ -27,7 +27,7 @@ type AuthService interface {
 	RefreshToken(ctx context.Context, input RefreshTokenRequest) (*TokenResponse, error)
 	GenerateResetToken(ctx context.Context, email string) error
 	ResetPassword(ctx context.Context, input ResetPasswordInput) error
-	// VerifyEmail(ctx context.Context, token string) error
+	VerifyEmail(ctx context.Context, token string) error  // <-- Uncomment this line
 	Logout(ctx context.Context, userID string) error
 	ValidateToken(ctx context.Context, tokenStr string) (*token.Claims, error)
 	IsEmailVerified(ctx context.Context, userID string) (bool, error)
@@ -711,5 +711,43 @@ func (s *authService) SendAccountLockedEmail(ctx context.Context, email, usernam
 	}
 
 	s.logger.Infof("Account locked notification sent successfully to: %s", email)
+	return nil
+}
+
+func (s *authService) VerifyEmail(ctx context.Context, token string) error {
+	s.logger.Infof("Verifying email with token")
+
+	// Find the auth record with this verification token
+	auth, err := s.authRepo.GetAuthByVerificationToken(ctx, token)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			s.logger.Warnf("Verification token not found: %s", token)
+			return errors.NewBadRequestError("Invalid or expired verification token", nil)
+		}
+		s.logger.Errorf("Failed to get auth by verification token: %v", err)
+		return errors.Wrap(err, "Failed to verify email")
+	}
+
+	// Check if already verified
+	if auth.IsEmailVerified != nil && *auth.IsEmailVerified {
+		s.logger.Infof("Email already verified for user: %s", auth.UserID)
+		return errors.NewBadRequestError("Email already verified", nil)
+	}
+
+	// Update the verification status
+	err = s.authRepo.UpdateEmailVerificationStatus(ctx, auth.UserID, true)
+	if err != nil {
+		s.logger.Errorf("Failed to update email verification status: %v", err)
+		return errors.Wrap(err, "Failed to update verification status")
+	}
+
+	// Clear the verification token
+	err = s.authRepo.ClearVerificationToken(ctx, auth.UserID)
+	if err != nil {
+		s.logger.Errorf("Failed to clear verification token: %v", err)
+		// Not critical, continue
+	}
+
+	s.logger.Infof("Email verified successfully for user: %s", auth.UserID)
 	return nil
 }

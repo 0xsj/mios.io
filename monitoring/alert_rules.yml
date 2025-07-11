@@ -1,8 +1,8 @@
 groups:
-  - name: gin-sqlc-alerts
+  - name: mios.io-alerts
     rules:
       - alert: HighErrorRate
-        expr: rate(gin_sqlc_api_errors_total[5m]) > 0.1
+        expr: rate(mios.io_api_errors_total[5m]) > 0.1
         for: 2m
         labels:
           severity: warning
@@ -11,7 +11,7 @@ groups:
           description: "Error rate is {{ $value }} errors per second"
 
       - alert: HighResponseTime
-        expr: histogram_quantile(0.95, rate(gin_sqlc_api_http_request_duration_seconds_bucket[5m])) > 1.0
+        expr: histogram_quantile(0.95, rate(mios.io_api_http_request_duration_seconds_bucket[5m])) > 1.0
         for: 5m
         labels:
           severity: warning
@@ -20,7 +20,7 @@ groups:
           description: "95th percentile response time is {{ $value }} seconds"
 
       - alert: DatabaseConnectionsHigh
-        expr: gin_sqlc_database_connections_active > 80
+        expr: mios.io_database_connections_active > 80
         for: 2m
         labels:
           severity: warning
@@ -29,7 +29,7 @@ groups:
           description: "Active database connections: {{ $value }}"
 
       - alert: MemoryUsageHigh
-        expr: gin_sqlc_runtime_memory_usage_bytes{type="alloc"} > 1073741824 # 1GB
+        expr: mios.io_runtime_memory_usage_bytes{type="alloc"} > 1073741824 # 1GB
         for: 5m
         labels:
           severity: warning
@@ -38,10 +38,10 @@ groups:
           description: "Memory usage is {{ $value | humanize1024 }}B"
 
       - alert: ServiceDown
-        expr: up{job="gin-sqlc-api"} == 0
+        expr: up{job="mios.io-api"} == 0
         for: 1m
         labels:
           severity: critical
         annotations:
           summary: "Service is down"
-          description: "The gin-sqlc API service is not responding"
+          description: "The mios.io API service is not responding"

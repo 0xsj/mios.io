@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0xsj/gin-sqlc/pkg/metrics"
+	"github.com/0xsj/mios.io/pkg/metrics"
 	"github.com/gin-gonic/gin"
 )
 

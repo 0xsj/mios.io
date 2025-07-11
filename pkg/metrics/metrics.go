@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	namespace = "gin_sqlc"
+	namespace = "mios.io"
 	subsystem = "api"
 )
 

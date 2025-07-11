@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/0xsj/gin-sqlc/log"
-	apperror "github.com/0xsj/gin-sqlc/pkg/errors"
+	"github.com/0xsj/mios.io/log"
+	apperror "github.com/0xsj/mios.io/pkg/errors"
 
-	db "github.com/0xsj/gin-sqlc/db/sqlc"
-	"github.com/0xsj/gin-sqlc/repository"
+	db "github.com/0xsj/mios.io/db/sqlc"
+	"github.com/0xsj/mios.io/repository"
 	"github.com/google/uuid"
 )
 

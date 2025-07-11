@@ -1,3 +1,4 @@
+// main.go - Updated to include file service
 package main
 
 import (
@@ -8,20 +9,22 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/0xsj/gin-sqlc/api/analytics"
-	"github.com/0xsj/gin-sqlc/api/auth"
-	"github.com/0xsj/gin-sqlc/api/content"
-	"github.com/0xsj/gin-sqlc/api/link_metadata"
-	api "github.com/0xsj/gin-sqlc/api/server"
-	"github.com/0xsj/gin-sqlc/api/user"
-	"github.com/0xsj/gin-sqlc/config"
-	db "github.com/0xsj/gin-sqlc/db/sqlc"
-	"github.com/0xsj/gin-sqlc/log"
-	"github.com/0xsj/gin-sqlc/middleware"
-	"github.com/0xsj/gin-sqlc/pkg/email"
-	"github.com/0xsj/gin-sqlc/pkg/redis"
-	"github.com/0xsj/gin-sqlc/repository"
-	"github.com/0xsj/gin-sqlc/service"
+	"github.com/0xsj/mios.io/api/analytics"
+	"github.com/0xsj/mios.io/api/auth"
+	"github.com/0xsj/mios.io/api/content"
+	"github.com/0xsj/mios.io/api/file"
+	"github.com/0xsj/mios.io/api/link_metadata"
+	api "github.com/0xsj/mios.io/api/server"
+	"github.com/0xsj/mios.io/api/user"
+	"github.com/0xsj/mios.io/config"
+	db "github.com/0xsj/mios.io/db/sqlc"
+	"github.com/0xsj/mios.io/log"
+	"github.com/0xsj/mios.io/middleware"
+	"github.com/0xsj/mios.io/pkg/email"
+	"github.com/0xsj/mios.io/pkg/redis"
+	"github.com/0xsj/mios.io/pkg/storage"
+	"github.com/0xsj/mios.io/repository"
+	"github.com/0xsj/mios.io/service"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -50,15 +53,16 @@ func main() {
 	middlewareLogger := baseLogger.WithLayer("Middleware")
 	serverLogger := baseLogger.WithLayer("Server")
 	redisLogger := baseLogger.WithLayer("redis")
+	storageLogger := baseLogger.WithLayer("Storage")
 
 	appLogger.Info("Loading configuration...")
 	cfg := config.LoadConfig("dev", ".")
 	appLogger.Debugf("Loaded configuration: %+v", cfg)
+	
 	redisClient, err := redis.NewClient(cfg, redisLogger)
 	if err != nil {
 		appLogger.Fatalf("Failed to connect to Redis: %v", err)
 	}
-
 	defer redisClient.Close()
 
 	if cfg.DBUsername == "" || cfg.DBPassword == "" || cfg.DBHost == "" || cfg.DBPort == "" || cfg.DBName == "" {
@@ -98,6 +102,36 @@ func main() {
 	appLogger.Info("Initializing database queries...")
 	queries := db.New(dbpool)
 
+	// Initialize storage
+	appLogger.Info("Initializing storage...")
+	var storageService storage.Storage
+	
+	switch cfg.StorageProvider {
+	case "s3":
+		appLogger.Info("Using S3 storage")
+		s3Config := storage.S3Config{
+			Region:      cfg.S3Region,
+			Bucket:      cfg.S3Bucket,
+			CDNDomain:   cfg.StorageCDNDomain,
+			AccessKeyID: cfg.S3AccessKeyID,
+			SecretKey:   cfg.S3SecretAccessKey,
+		}
+		storageService, err = storage.NewS3Storage(s3Config, storageLogger)
+		if err != nil {
+			appLogger.Fatalf("Failed to initialize S3 storage: %v", err)
+		}
+	case "local":
+		appLogger.Info("Using local storage")
+		storageService = storage.NewLocalStorage(cfg.StorageBasePath, cfg.StorageBaseURL, storageLogger)
+		
+		// Create uploads directory if it doesn't exist
+		if err := os.MkdirAll(cfg.StorageBasePath, 0755); err != nil {
+			appLogger.Fatalf("Failed to create uploads directory: %v", err)
+		}
+	default:
+		appLogger.Fatalf("Unknown storage provider: %s", cfg.StorageProvider)
+	}
+
 	appLogger.Info("Initializing repositories...")
 	userRepo := repository.NewUserRepository(queries, repoLogger.With("repository", "User"))
 	authRepo := repository.NewAuthRepository(queries, repoLogger.With("repository", "Auth"))
@@ -123,6 +157,23 @@ func main() {
 		serviceLogger.With("service", "Analytics"))
 	linkMetadataService := service.NewLinkMetadataService(linkMetadataRepo,
 		serviceLogger.With("service", "LinkMetadata"))
+	
+	// Initialize file service
+	fileServiceConfig := service.FileServiceConfig{
+		MaxFileSize:   cfg.MaxFileSize,
+		MaxAvatarSize: cfg.MaxAvatarSize,
+		AllowedImageTypes: []string{
+			"image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp",
+		},
+		AllowedVideoTypes: []string{
+			"video/mp4", "video/webm", "video/ogg", "video/avi", "video/mov",
+		},
+		AllowedFileTypes: []string{
+			"application/pdf", "text/plain", "application/json",
+		},
+		CDNDomain: cfg.StorageCDNDomain,
+	}
+	fileService := service.NewFileService(storageService, fileServiceConfig, serviceLogger.With("service", "File"))
 
 	appLogger.Info("Initializing handlers...")
 	userHandler := user.NewHandler(userService, handlerLogger.With("handler", "User"))
@@ -130,6 +181,7 @@ func main() {
 	contentHandler := content.NewHandler(contentService, handlerLogger.With("handler", "Content"))
 	analyticsHandler := analytics.NewHandler(analyticsService, handlerLogger.With("handler", "Analytics"))
 	linkMetadataHandler := link_metadata.NewHandler(linkMetadataService, handlerLogger.With("handler", "LinkMetadata"))
+	fileHandler := file.NewHandler(fileService, handlerLogger.With("handler", "File"))
 
 	appLogger.Info("Initializing OpenAPI handler...")
 
@@ -141,7 +193,12 @@ func main() {
 
 	server.Router().Use(middleware.LoggingMiddleware(middlewareLogger))
 
-	server.RegisterHandlers(userHandler, authHandler, contentHandler, authService, analyticsHandler, linkMetadataHandler)
+	// Serve static files for local storage
+	if cfg.StorageProvider == "local" {
+		server.Router().Static("/uploads", cfg.StorageBasePath)
+	}
+
+	server.RegisterHandlers(userHandler, authHandler, contentHandler, authService, analyticsHandler, linkMetadataHandler, fileHandler)
 
 	appLogger.Info("Registering OpenAPI handlers...")
 

@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0xsj/gin-sqlc/log"
-	"github.com/0xsj/gin-sqlc/pkg/redis"
-	"github.com/0xsj/gin-sqlc/pkg/response"
+	"github.com/0xsj/mios.io/log"
+	"github.com/0xsj/mios.io/pkg/redis"
+	"github.com/0xsj/mios.io/pkg/response"
 	"github.com/gin-gonic/gin"
 )
 

@@ -5,7 +5,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/0xsj/gin-sqlc/pkg/metrics"
+	"github.com/0xsj/mios.io/pkg/metrics"
 )
 
 // InstrumentedCache wraps CacheService with metrics

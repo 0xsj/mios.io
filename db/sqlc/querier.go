@@ -12,6 +12,7 @@ import (
 
 type Querier interface {
 	ClearResetToken(ctx context.Context, userID uuid.UUID) error
+	ClearVerificationToken(ctx context.Context, userID uuid.UUID) error
 	// db/query/analytics.sql
 	// Recording clicks and page views
 	CreateAnalyticsEntry(ctx context.Context, arg CreateAnalyticsEntryParams) (*Analytic, error)

@@ -5,8 +5,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/0xsj/gin-sqlc/log"
-	"github.com/0xsj/gin-sqlc/pkg/cache"
+	"github.com/0xsj/mios.io/log"
+	"github.com/0xsj/mios.io/pkg/cache"
 )
 
 // CachedAnalyticsService wraps the regular analytics service with caching

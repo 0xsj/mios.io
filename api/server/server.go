@@ -1,21 +1,23 @@
+// api/server/server.go - Updated RegisterHandlers method
 package api
 
 import (
 	"fmt"
 	"time"
 
-	"github.com/0xsj/gin-sqlc/api/analytics"
-	"github.com/0xsj/gin-sqlc/api/auth"
-	"github.com/0xsj/gin-sqlc/api/content"
-	"github.com/0xsj/gin-sqlc/api/link_metadata" // Added import
-	"github.com/0xsj/gin-sqlc/api/user"
-	"github.com/0xsj/gin-sqlc/config"
-	db "github.com/0xsj/gin-sqlc/db/sqlc"
-	"github.com/0xsj/gin-sqlc/log"
-	"github.com/0xsj/gin-sqlc/middleware"
-	"github.com/0xsj/gin-sqlc/pkg/redis"
-	"github.com/0xsj/gin-sqlc/pkg/response"
-	"github.com/0xsj/gin-sqlc/service"
+	"github.com/0xsj/mios.io/api/analytics"
+	"github.com/0xsj/mios.io/api/auth"
+	"github.com/0xsj/mios.io/api/content"
+	"github.com/0xsj/mios.io/api/file" // Add file import
+	"github.com/0xsj/mios.io/api/link_metadata"
+	"github.com/0xsj/mios.io/api/user"
+	"github.com/0xsj/mios.io/config"
+	db "github.com/0xsj/mios.io/db/sqlc"
+	"github.com/0xsj/mios.io/log"
+	"github.com/0xsj/mios.io/middleware"
+	"github.com/0xsj/mios.io/pkg/redis"
+	"github.com/0xsj/mios.io/pkg/response"
+	"github.com/0xsj/mios.io/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -56,7 +58,8 @@ func (s *Server) RegisterHandlers(
 	contentHandler *content.Handler,
 	authService service.AuthService,
 	analyticsHandler *analytics.Handler,
-	linkMetadataHandler *link_metadata.Handler, // Added parameter
+	linkMetadataHandler *link_metadata.Handler,
+	fileHandler *file.Handler, // Add file handler parameter
 ) {
 	s.logger.Info("Registering API routes")
 
@@ -96,6 +99,12 @@ func (s *Server) RegisterHandlers(
 			publicMetadataGroup.GET("/platforms", linkMetadataHandler.ListPlatforms)
 			publicMetadataGroup.GET("/url", linkMetadataHandler.GetLinkMetadata)
 		}
+
+		// Public file routes (for getting file URLs)
+		publicFileGroup := publicRoutes.Group("/files")
+		{
+			publicFileGroup.GET("/:key/url", fileHandler.GetFileURL)
+		}
 	}
 
 	// Protected routes - require authentication
@@ -133,6 +142,21 @@ func (s *Server) RegisterHandlers(
 
 			// Some operations might not need email verification
 			contentGroup.GET("/:id", contentHandler.GetContentItem)
+		}
+
+		// File upload routes - require authentication
+		fileGroup := protectedRoutes.Group("/files")
+		{
+			// Some operations might need email verification
+			verifiedFileGroup := fileGroup.Group("")
+			verifiedFileGroup.Use(verifiedEmailMiddleware)
+			{
+				verifiedFileGroup.POST("/upload", fileHandler.UploadFile)
+				verifiedFileGroup.POST("/upload/avatar", fileHandler.UploadAvatar)
+				verifiedFileGroup.POST("/upload/content", fileHandler.UploadContentMedia)
+				verifiedFileGroup.POST("/presigned-upload", fileHandler.GetPresignedUploadURL)
+				verifiedFileGroup.DELETE("/:key", fileHandler.DeleteFile)
+			}
 		}
 
 		// Analytics routes
